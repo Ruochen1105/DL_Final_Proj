@@ -3,12 +3,13 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from dataset import create_wall_dataloader
 from models import JEPA
 
 
-def train_model(model, train_loader, optimizer, epochs, device, save_path="./", patience=10):
+def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=10):
     """
     Train the JEPA model using an energy-based approach.
 
@@ -16,6 +17,7 @@ def train_model(model, train_loader, optimizer, epochs, device, save_path="./", 
         model (JEPA): The JEPA model to train.
         train_loader (DataLoader): DataLoader for training data.
         optimizer (torch.optim.Optimizer): Optimizer for training.
+        scheduler (torch.optim.lr_scheduler): Learning rate scheduler.
         epochs (int): Number of training epochs.
         device (torch.device): Device to run the training on (e.g., 'cuda' or 'cpu').
         save_path (str): Path to the checkpoint.
@@ -58,6 +60,8 @@ def train_model(model, train_loader, optimizer, epochs, device, save_path="./", 
 
         print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_epoch_loss:.4f}")
 
+        scheduler.step(avg_epoch_loss)
+
         if avg_epoch_loss < best_loss:
             best_loss = avg_epoch_loss
             patience_counter = 0
@@ -95,7 +99,9 @@ if __name__ == "__main__":
     # Model, optimizer, and device
     model = JEPA(s_dim, u_dim, cnn_dim).to(device)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    scheduler = ReduceLROnPlateau(
+        optimizer, mode="min", factor=0.5, patience=3, verbose=True)
 
     # Train the model
-    epochs = 20
-    train_model(model, train_loader, optimizer, epochs, device)
+    epochs = 200
+    train_model(model, train_loader, optimizer, scheduler, epochs, device)
