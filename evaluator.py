@@ -1,20 +1,20 @@
-from typing import NamedTuple, List, Any, Optional, Dict
-from itertools import chain
-from dataclasses import dataclass
 import itertools
 import os
+from dataclasses import dataclass
+from itertools import chain
+from typing import Any, Dict, List, NamedTuple, Optional
+
+import numpy as np
 import torch
 import torch.nn.functional as F
-from tqdm.auto import tqdm
-import numpy as np
 from matplotlib import pyplot as plt
+from tqdm.auto import tqdm
 
-from schedulers import Scheduler, LRSchedule
-from models import Prober, build_mlp
 from configs import ConfigBase
-
 from dataset import WallDataset
+from models import Prober, build_mlp
 from normalizer import Normalizer
+from schedulers import LRSchedule, Scheduler
 
 
 @dataclass
@@ -113,7 +113,8 @@ class ProbingEvaluator:
                 ################################################################################
                 # TODO: Forward pass through your model
                 pred_encs = model(states=batch.states, actions=batch.actions)
-                pred_encs = pred_encs.transpose(0, 1)  # # BS, T, D --> T, BS, D
+                pred_encs = pred_encs.transpose(
+                    0, 1)  # # BS, T, D --> T, BS, D
 
                 # Make sure pred_encs has shape (T, BS, D) at this point
                 ################################################################################
@@ -132,7 +133,8 @@ class ProbingEvaluator:
                     config.sample_timesteps is not None
                     and config.sample_timesteps < n_steps
                 ):
-                    sample_shape = (config.sample_timesteps,) + pred_encs.shape[1:]
+                    sample_shape = (config.sample_timesteps,) + \
+                        pred_encs.shape[1:]
                     # we only randomly sample n timesteps to train prober.
                     # we most likely do this to avoid OOM
                     sampled_pred_encs = torch.empty(
@@ -141,10 +143,12 @@ class ProbingEvaluator:
                         device=pred_encs.device,
                     )
 
-                    sampled_target_locs = torch.empty(bs, config.sample_timesteps, 2)
+                    sampled_target_locs = torch.empty(
+                        bs, config.sample_timesteps, 2)
 
                     for i in range(bs):
-                        indices = torch.randperm(n_steps)[: config.sample_timesteps]
+                        indices = torch.randperm(
+                            n_steps)[: config.sample_timesteps]
                         sampled_pred_encs[:, i, :] = pred_encs[indices, i, :]
                         sampled_target_locs[i, :] = target[i, indices]
 
@@ -156,7 +160,8 @@ class ProbingEvaluator:
                 per_probe_loss = losses.mean()
 
                 if step % 100 == 0:
-                    print(f"normalized pred locations loss {per_probe_loss.item()}")
+                    print(
+                        f"normalized pred locations loss {per_probe_loss.item()}")
 
                 losses_list.append(per_probe_loss)
                 optimizer_pred_prober.zero_grad()

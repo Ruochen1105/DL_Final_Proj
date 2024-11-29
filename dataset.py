@@ -1,6 +1,7 @@
 from typing import NamedTuple, Optional
-import torch
+
 import numpy as np
+import torch
 
 
 class WallSample(NamedTuple):
@@ -33,7 +34,8 @@ class WallDataset:
         actions = torch.from_numpy(self.actions[i]).float().to(self.device)
 
         if self.locations is not None:
-            locations = torch.from_numpy(self.locations[i]).float().to(self.device)
+            locations = torch.from_numpy(
+                self.locations[i]).float().to(self.device)
         else:
             locations = torch.empty(0).to(self.device)
 
