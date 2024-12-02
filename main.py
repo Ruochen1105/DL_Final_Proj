@@ -1,8 +1,10 @@
+import glob
+
+import torch
+
 from dataset import create_wall_dataloader
 from evaluator import ProbingEvaluator
-import torch
 from models import MockModel
-import glob
 
 
 def get_device():

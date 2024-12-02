@@ -2,7 +2,7 @@ import argparse
 import dataclasses
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Iterable, Tuple, Union, cast, List
+from typing import Any, Iterable, List, Tuple, Union, cast
 
 from omegaconf import OmegaConf
 
