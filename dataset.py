@@ -70,8 +70,6 @@ if __name__ == "__main__":
     data_path = "/scratch/DL24FA/train"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # TODO: hard-code C, H, W
-
     train_loader = create_wall_dataloader(
         data_path=f"{data_path}",
         probing=False,
@@ -80,6 +78,6 @@ if __name__ == "__main__":
     )
     for batch in train_loader:
         # Extract the shape of a single state
-        print(batch.states.shape)
-        print(batch.actions.shape)
+        print(batch.states.shape)  # (64, 17, 2, 65, 65)
+        print(batch.actions.shape)  # (64, 16, 2)
         break

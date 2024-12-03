@@ -69,26 +69,25 @@ class Prober(torch.nn.Module):
 
 
 class JEPA(nn.Module):
-    def __init__(self, s_dim, u_dim, cnn_dim):
+    def __init__(self, s_dim, cnn_dim):
         """
         Joint Embedding Predictive Architecture (JEPA).
 
         Args:
             s_dim (int): Space dimensionality for the encoded states.
-            u_dim (int): Dimensionality of the action vector.
             cnn_dim (int): Base dimensionality for the CNN.
         """
         super().__init__()
         self.encoder = Encoder(s_dim, cnn_dim)
-        self.predictor = Predictor(s_dim, u_dim)
+        self.predictor = Predictor(s_dim)
 
     def forward(self, states, actions):
         """
         Forward pass for the JEPA model.
 
         Args:
-            states (torch.Tensor): Sequence of states of shape (B, 1, C, H, W).
-            actions (torch.Tensor): Sequence of actions of shape (B, T-1, u_dim).
+            states (torch.Tensor): Sequence of states of shape (B, T, C, H, W).
+            actions (torch.Tensor): Sequence of actions of shape (B, T-1, 2).
 
         Returns:
             torch.Tensor: Predicted next states of shape (B, T-1, s_dim).
@@ -97,7 +96,7 @@ class JEPA(nn.Module):
         states = self.encoder(states)  # Shape: (B, s_dim)
 
         # Use states and actions to predict the next states
-        B, T, _ = actions.size()
+        T = actions.shape[1]
         predicted_states = [states]
         for t in range(T - 1):
             # Use state at time t and action at time t to predict state at t+1
@@ -116,11 +115,7 @@ class JEPA(nn.Module):
 
 class Encoder(nn.Module):
     """
-    Encoder module for JEPA (Joint Embedding Predictive Architecture).
-
-    The Encoder transforms a sequence of input states (e.g., images or feature maps)
-    into a representation in a reduced-dimensional space. It uses a
-    Convolutional Neural Network (CNN) followed by a fully connected layer.
+    Encoder module for JEPA.
 
     Args:
         s_dim (int): Dimensionality of the space for the encoded state.
@@ -128,46 +123,19 @@ class Encoder(nn.Module):
 
     Forward Pass:
         The input is expected to be a batch of sequences of states, with shape
-        (B, C, H, W). Each state is processed through the CNN and fully connected
+        (B, T, C, H, W). Each state is processed through the CNN and fully connected
         layers, and the output is a sequence of representations with shape
-        (B, s_dim).
+        (B, T, s_dim).
 
-    Methods:
-        forward(x):
-            Processes the input states through the Encoder and outputs representations.
-            Args:
-                x (torch.Tensor): Input tensor of shape (B, T, C, H, W), where:
-                    - B: Batch size.
-                    - C: Number of channels.
-                    - H: Height of each input image.
-                    - W: Width of each input image.
-            Returns:
-                torch.Tensor: Encoded representations of shape (B, T, s_dim).
+    Returns:
+        torch.Tensor: Encoded representations of shape (B, T, s_dim).
     """
 
     def __init__(self, s_dim, cnn_dim):
         super().__init__()
-
-        data_path = "/scratch/DL24FA/train"
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        # TODO: hard-code C, H, W
-
-        train_loader = create_wall_dataloader(
-            data_path=f"{data_path}",
-            probing=False,
-            device=device,
-            train=True,
-        )
-
-        for batch in train_loader:
-            # Extract the shape of a single state
-            C, H, W = batch.states.shape[2:]
-            input_shape = (C, H, W)
-            break
+        C, H, W = 2, 65, 65
 
         # Calculate dimensions for the fully connected layer
-        C, H, W = input_shape
         H, W = (H - 1) // 2 + 1, (W - 1) // 2 + 1
         H, W = (H - 1) // 2 + 1, (W - 1) // 2 + 1
         fc_input_dim = H * W * cnn_dim * 2
@@ -191,18 +159,19 @@ class Encoder(nn.Module):
         Forward pass for the encoder.
 
         Args:
-            x (torch.Tensor): Input tensor of shape (B, C, H, W).
+            x (torch.Tensor): Input tensor of shape (B, T, C, H, W).
 
         Returns:
-            torch.Tensor: Output tensor of shape (B, s_dim).
+            torch.Tensor: Output tensor of shape (B, T, s_dim).
         """
-        B, C, H, W = x.size()
+        B, T, C, H, W = x.size()
 
         # Process each frame in the batch
+        x = x.reshape(B * T, C, H, W)
         x = self.cnn(x)
         x = self.flatten(x)
         x = self.fc(x)
-        x = x.reshape(B, -1)
+        x = x.reshape(B, T, -1)
 
         return x
 
@@ -217,14 +186,13 @@ class Predictor(nn.Module):
 
     Args:
         s_dim (int): Dimensionality of the state vector.
-        u_dim (int): Dimensionality of the action vector.
 
     Attributes:
         fc (torch.nn.Sequential): Fully connected layer for predicting the next state.
 
     Forward Pass:
         The input is expected to be a batch of states and actions, with shapes
-        (B, s_dim) and (B, u_dim), respectively. The output is the predicted next state
+        (B, s_dim) and (B, 2), respectively. The output is the predicted next state
         with shape (B, s_dim).
 
     Methods:
@@ -234,18 +202,17 @@ class Predictor(nn.Module):
                 state (torch.Tensor): Current state of shape (B, s_dim), where:
                     - B: Batch size.
                     - s_dim: Dimensionality of the state vector.
-                action (torch.Tensor): Current action vector of shape (B, u_dim), where:
+                action (torch.Tensor): Current action vector of shape (B, 2), where:
                     - B: Batch size.
-                    - u_dim: Dimensionality of the action vector.
             Returns:
                 torch.Tensor: Predicted next state of shape (B, s_dim).
     """
 
-    def __init__(self, s_dim, u_dim):
+    def __init__(self, s_dim):
         super().__init__()
 
         self.fc = nn.Sequential(
-            nn.Linear(s_dim + u_dim, s_dim),
+            nn.Linear(s_dim + 2, s_dim),
             nn.BatchNorm1d(num_features=s_dim),
             nn.ReLU()
         )
@@ -256,7 +223,7 @@ class Predictor(nn.Module):
 
         Args:
             state (torch.Tensor): State representation of shape (B, s_dim).
-            action (torch.Tensor): Action vector of shape (B, u_dim).
+            action (torch.Tensor): Action vector of shape (B, 2).
 
         Returns:
             torch.Tensor: Predicted next state of shape (B, s_dim).

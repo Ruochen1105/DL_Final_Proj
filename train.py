@@ -87,7 +87,6 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
 if __name__ == "__main__":
     s_dim = 256
-    u_dim = 2
     cnn_dim = 64
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -101,7 +100,7 @@ if __name__ == "__main__":
     )
 
     # Model, optimizer, and device
-    model = JEPA(s_dim, u_dim, cnn_dim).to(device)
+    model = JEPA(s_dim, cnn_dim).to(device)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     scheduler = ReduceLROnPlateau(
         optimizer, mode="min", factor=0.5, patience=3, verbose=True)
