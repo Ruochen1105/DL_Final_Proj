@@ -93,19 +93,24 @@ class JEPA(nn.Module):
             torch.Tensor: Predicted next states of shape (B, T-1, s_dim).
         """
         # Encode the states into representations
-        states = self.encoder(states)  # Shape: (B, s_dim)
-
-        # Use states and actions to predict the next states
+        states = self.encoder(states)  # shape: (B, T, s_dim)
         T = actions.shape[1]
-        predicted_states = [states]
-        for t in range(T - 1):
-            # Use state at time t and action at time t to predict state at t+1
-            predicted_state = self.predictor(
-                predicted_states[-1], actions[:, t])
+        if states.shape[1] == 1:  # inferencing
+            # Use states and actions to predict the next states
+            predicted_states = [states]
+            for t in range(T - 1):
+                # Use state at time t and action at time t to predict state at t+1
+                predicted_state = self.predictor(
+                    predicted_states[-1], actions[:, t])
+                predicted_states.append(predicted_state)
+
+            predicted_states = predicted_states[1:]
+        else:  # training
+            predicted_states = []
+            for t in range(T - 1):
+                predicted_state = self.predictor(
+                    states[:, t + 1], actions[:, t])
             predicted_states.append(predicted_state)
-
-        predicted_states = predicted_states[1:]
-
         # Concatenate all predicted states along the temporal dimension
         predicted_states = torch.stack(
             predicted_states, dim=1)  # Shape: (B, T-1, s_dim)
