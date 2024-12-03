@@ -167,8 +167,8 @@ class Encoder(nn.Module):
         )
 
         for batch in train_loader:
-            states, _ = batch
-            C, H, W = states.shape[2:]  # Extract the shape of a single state
+            # Extract the shape of a single state
+            C, H, W = batch.states.shape[2:]
             input_shape = (C, H, W)
             break
 
@@ -205,11 +205,11 @@ class Encoder(nn.Module):
         B, T, C, H, W = x.size()
 
         # Process each frame in the batch
-        x = x.view(B * T, C, H, W)
+        x = x.reshape(B * T, C, H, W)
         x = self.cnn(x)
         x = self.flatten(x)
         x = self.fc(x)
-        x = x.view(B, T, -1)
+        x = x.reshape(B, T, -1)
 
         return x
 
@@ -268,7 +268,6 @@ class Predictor(nn.Module):
         Returns:
             torch.Tensor: Predicted next state of shape (B, s_dim).
         """
-        x = torch.cat([state, action],
-                      dim=1)
+        x = torch.cat([state, action], dim=1)
         x = self.fc(x)
         return x

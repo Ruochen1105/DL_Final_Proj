@@ -38,11 +38,15 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     for epoch in range(epochs):
         epoch_loss = 0.0
 
-        for states, actions in train_loader:
+        for batch in train_loader:
+            states, actions = batch.states, batch.actions
             states, actions = states.to(device), actions.to(device)
 
             next_states_true = states[:, 1:]  # Shape: (B, T-1, C, H, W)
             current_states = states[:, :-1]  # Shape: (B, T-1, C, H, W)
+
+            # TODO: next_states_true will go through the encoder before being compared with the predicted_next_states
+            next_states_true = model.encoder(next_states_true)
 
             predicted_next_states = model(
                 current_states, actions)  # Shape: (B, T-1, s_dim)
@@ -83,7 +87,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
 if __name__ == "__main__":
     s_dim = 256
-    u_dim = 32
+    u_dim = 2
     cnn_dim = 64
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
