@@ -121,17 +121,8 @@ class Encoder(nn.Module):
     Convolutional Neural Network (CNN) followed by a fully connected layer.
 
     Args:
-        input_shape (tuple): Shape of a single input state (C, H, W), where:
-            - C: Number of channels in the input.
-            - H: Height of the input image.
-            - W: Width of the input image.
         s_dim (int): Dimensionality of the space for the encoded state.
         cnn_dim (int): Base number of channels used in the CNN.
-
-    Attributes:
-        cnn (torch.nn.Sequential): Convolutional layers for feature extraction.
-        flatten (torch.nn.Flatten): Layer to flatten the CNN output before the fully connected layer.
-        fc (torch.nn.Linear): Fully connected layer mapping the flattened CNN output to the space.
 
     Forward Pass:
         The input is expected to be a batch of sequences of states, with shape
@@ -158,6 +149,8 @@ class Encoder(nn.Module):
 
         data_path = "/scratch/DL24FA/train"
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # TODO: hard-code C, H, W
 
         train_loader = create_wall_dataloader(
             data_path=f"{data_path}",
