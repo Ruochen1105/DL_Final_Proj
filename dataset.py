@@ -81,4 +81,5 @@ if __name__ == "__main__":
     for batch in train_loader:
         # Extract the shape of a single state
         print(batch.states.shape)
+        print(batch.actions.shape)
         break
