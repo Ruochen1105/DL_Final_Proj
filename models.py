@@ -87,23 +87,25 @@ class JEPA(nn.Module):
         Forward pass for the JEPA model.
 
         Args:
-            states (torch.Tensor): Sequence of states of shape (B, T, C, H, W).
+            states (torch.Tensor): Sequence of states of shape (B, 1, C, H, W).
             actions (torch.Tensor): Sequence of actions of shape (B, T-1, u_dim).
 
         Returns:
             torch.Tensor: Predicted next states of shape (B, T-1, s_dim).
         """
         # Encode the states into representations
-        states = self.encoder(states)  # Shape: (B, T, s_dim)
+        states = self.encoder(states)  # Shape: (B, s_dim)
 
         # Use states and actions to predict the next states
         B, T, _ = actions.size()
-        predicted_states = []
+        predicted_states = [states]
         for t in range(T - 1):
             # Use state at time t and action at time t to predict state at t+1
             predicted_state = self.predictor(
-                states[:, t], actions[:, t])
+                predicted_states[-1], actions[:, t])
             predicted_states.append(predicted_state)
+
+        predicted_states = predicted_states[1:]
 
         # Concatenate all predicted states along the temporal dimension
         predicted_states = torch.stack(
@@ -126,9 +128,9 @@ class Encoder(nn.Module):
 
     Forward Pass:
         The input is expected to be a batch of sequences of states, with shape
-        (B, T, C, H, W). Each state is processed through the CNN and fully connected
+        (B, C, H, W). Each state is processed through the CNN and fully connected
         layers, and the output is a sequence of representations with shape
-        (B, T, s_dim).
+        (B, s_dim).
 
     Methods:
         forward(x):
@@ -136,7 +138,6 @@ class Encoder(nn.Module):
             Args:
                 x (torch.Tensor): Input tensor of shape (B, T, C, H, W), where:
                     - B: Batch size.
-                    - T: Sequence length.
                     - C: Number of channels.
                     - H: Height of each input image.
                     - W: Width of each input image.
@@ -190,19 +191,18 @@ class Encoder(nn.Module):
         Forward pass for the encoder.
 
         Args:
-            x (torch.Tensor): Input tensor of shape (B, T, C, H, W).
+            x (torch.Tensor): Input tensor of shape (B, C, H, W).
 
         Returns:
-            torch.Tensor: Output tensor of shape (B, T, s_dim).
+            torch.Tensor: Output tensor of shape (B, s_dim).
         """
-        B, T, C, H, W = x.size()
+        B, C, H, W = x.size()
 
         # Process each frame in the batch
-        x = x.reshape(B * T, C, H, W)
         x = self.cnn(x)
         x = self.flatten(x)
         x = self.fc(x)
-        x = x.reshape(B, T, -1)
+        x = x.reshape(B, -1)
 
         return x
 
