@@ -43,13 +43,11 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             states, actions = batch.states, batch.actions
             states, actions = states.to(device), actions.to(device)
 
-            next_states_true = states[:, 1:]  # Shape: (B, T-1, C, H, W)
-            current_states = states[:, :-1]  # Shape: (B, T-1, C, H, W)
-
-            next_states_true = model.encoder(next_states_true)
-
             predicted_next_states = model(
-                current_states, actions)  # Shape: (B, T-1, s_dim)
+                states, actions)  # Shape: (B, T-1, s_dim)
+
+            next_states_true = states[:, 1:]  # Shape: (B, T-1, C, H, W)
+            next_states_true = model.encoder(next_states_true)
 
             loss = loss_fn(predicted_next_states, next_states_true)
 
