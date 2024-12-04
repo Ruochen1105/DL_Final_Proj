@@ -3,9 +3,6 @@ from typing import List
 import numpy as np
 import torch
 from torch import nn
-from torch.nn import functional as F
-
-from dataset import create_wall_dataloader
 
 
 def build_mlp(layers_dims: List[int]):
