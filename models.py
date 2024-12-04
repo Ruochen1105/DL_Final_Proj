@@ -110,7 +110,7 @@ class JEPA(nn.Module):
             for t in range(T - 1):
                 predicted_state = self.predictor(
                     states[:, t + 1], actions[:, t])
-            predicted_states.append(predicted_state)
+                predicted_states.append(predicted_state)
         # Concatenate all predicted states along the temporal dimension
         predicted_states = torch.stack(
             predicted_states, dim=1)  # Shape: (B, T-1, s_dim)
