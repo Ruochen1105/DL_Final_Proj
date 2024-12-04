@@ -30,6 +30,9 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     """
     os.makedirs(save_path, exist_ok=True)
 
+    if torch.cuda.device_count() > 1:
+        print(f"Using {torch.cuda.device_count()} GPUs with DataParallel.")
+        model = DataParallel(model)
     model.to(device)
 
     loss_fn = nn.MSELoss()
@@ -50,7 +53,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
                 states, actions)  # Shape: (B, T-1, s_dim)
 
             next_states_true = states[:, 1:]  # Shape: (B, T-1, C, H, W)
-            next_states_true = model.encoder(next_states_true)
+            next_states_true = model.module.encoder(next_states_true)
 
             loss = loss_fn(predicted_next_states, next_states_true)
 
