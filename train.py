@@ -51,6 +51,9 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             predicted_next_states = model(
                 current_states, actions)  # Shape: (B, T-1, s_dim)
 
+            print(predicted_next_states.shape)
+            print(next_states_true.shape)
+
             loss = loss_fn(predicted_next_states, next_states_true)
 
             optimizer.zero_grad()
