@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from tqdm import tqdm
 
 from dataset import create_wall_dataloader
 from models import JEPA
@@ -35,7 +36,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
     model.train()
 
-    for epoch in range(epochs):
+    for epoch in tqdm(range(epochs), desc=f"epoch{epoch}", total=epochs):
         epoch_loss = 0.0
 
         for batch in train_loader:
@@ -45,7 +46,6 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             next_states_true = states[:, 1:]  # Shape: (B, T-1, C, H, W)
             current_states = states[:, :-1]  # Shape: (B, T-1, C, H, W)
 
-            # TODO: next_states_true will go through the encoder before being compared with the predicted_next_states
             next_states_true = model.encoder(next_states_true)
 
             predicted_next_states = model(
