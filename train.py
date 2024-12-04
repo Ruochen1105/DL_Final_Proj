@@ -45,7 +45,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     for epoch in tqdm(range(epochs), desc=f"training", total=epochs):
         epoch_loss = 0.0
 
-        for batch in train_loader:
+        for batch in tqdm(train_loader, total=len(train_loader)):
             states, actions = batch.states, batch.actions
             states, actions = states.to(device), actions.to(device)
 
