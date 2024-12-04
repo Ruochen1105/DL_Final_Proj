@@ -45,7 +45,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     for epoch in tqdm(range(epochs), desc=f"training", total=epochs):
         epoch_loss = 0.0
 
-        for batch in tqdm(train_loader, total=len(train_loader)):
+        for batch in train_loader:
             states, actions = batch.states, batch.actions
             states, actions = states.to(device), actions.to(device)
 
@@ -89,8 +89,8 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
 
 if __name__ == "__main__":
-    s_dim = 128
-    cnn_dim = 32
+    s_dim = 256
+    cnn_dim = 64
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_path = "/scratch/DL24FA/train"
