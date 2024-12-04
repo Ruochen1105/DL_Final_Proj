@@ -47,6 +47,8 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
         for batch in tqdm(train_loader, total=len(train_loader)):
             states, actions = batch.states, batch.actions
+            print(states.get_device(), actions.get_device())
+            break
             states, actions = states.to(device), actions.to(device)
 
             predicted_next_states = model(
