@@ -10,7 +10,7 @@ from dataset import create_wall_dataloader
 from models import JEPA
 
 
-def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=10):
+def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./checkpoint", patience=10):
     """
     Train the JEPA model using an energy-based approach.
 
