@@ -42,7 +42,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
     model.train()
 
-    for epoch in tqdm(range(epochs), desc=f"training", total=epochs):
+    for epoch in range(epochs):
         epoch_loss = 0.0
 
         for batch in tqdm(train_loader, total=len(train_loader)):
