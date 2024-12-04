@@ -1,6 +1,7 @@
-from typing import NamedTuple, Optional
-import torch
+from typing import NamedTuple
+
 import numpy as np
+import torch
 
 
 class WallSample(NamedTuple):
@@ -33,7 +34,8 @@ class WallDataset:
         actions = torch.from_numpy(self.actions[i]).float().to(self.device)
 
         if self.locations is not None:
-            locations = torch.from_numpy(self.locations[i]).float().to(self.device)
+            locations = torch.from_numpy(
+                self.locations[i]).float().to(self.device)
         else:
             locations = torch.empty(0).to(self.device)
 
@@ -62,3 +64,20 @@ def create_wall_dataloader(
     )
 
     return loader
+
+
+if __name__ == "__main__":
+    data_path = "/scratch/DL24FA/train"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    train_loader = create_wall_dataloader(
+        data_path=f"{data_path}",
+        probing=False,
+        device=device,
+        train=True,
+    )
+    for batch in train_loader:
+        # Extract the shape of a single state
+        print(batch.states.shape)  # (64, 17, 2, 65, 65)
+        print(batch.actions.shape)  # (64, 16, 2)
+        break
