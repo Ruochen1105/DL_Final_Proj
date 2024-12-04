@@ -233,11 +233,11 @@ class Predictor(nn.Module):
             torch.Tensor: Predicted next state of shape (B, s_dim).
         """
         B, T, s_dim = state.shape
-        state = state.view(B * T, s_dim)
-        action = action.view(B * T, -1)
+        state = state.reshape(B * T, s_dim)
+        action = action.reshape(B * T, -1)
 
         x = torch.cat([state, action], dim=1)
         x = self.fc(x)
 
-        x = x.view(B, T, s_dim)
+        x = x.reshape(B, T, s_dim)
         return x
