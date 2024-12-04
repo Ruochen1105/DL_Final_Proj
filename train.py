@@ -11,7 +11,7 @@ from dataset import create_wall_dataloader
 from models import JEPA
 
 
-def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./checkpoint", patience=10):
+def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./checkpoint", patience=5):
     """
     Train the JEPA model using an energy-based approach.
 
@@ -45,7 +45,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     for epoch in range(epochs):
         epoch_loss = 0.0
 
-        for batch in tqdm(train_loader, total=len(train_loader)):
+        for batch in tqdm(train_loader, total=len(train_loader), smoothing=50/len(train_loader)):
             states, actions = batch.states, batch.actions
             states, actions = states.to(device), actions.to(device)
 
