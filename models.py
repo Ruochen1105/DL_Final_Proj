@@ -106,10 +106,6 @@ class JEPA(nn.Module):
                 predicted_states, dim=1)  # Shape: (B, T-1, s_dim)
         else:  # training
             predicted_states = self.predictor(states[:, :-1], actions)
-            # for t in range(T):
-            #     predicted_state = self.predictor(
-            #         states[:, t], actions[:, t])
-            #     predicted_states.append(predicted_state)
 
         return predicted_states
 
@@ -223,18 +219,24 @@ class Predictor(nn.Module):
         Forward pass for the predictor.
 
         Args:
-            state (torch.Tensor): State representation of shape (B, T, s_dim).
-            action (torch.Tensor): Action vector of shape (B, T, 2).
+            state (torch.Tensor): State representation of shape (B, [T], s_dim).
+            action (torch.Tensor): Action vector of shape (B, [T], 2).
 
         Returns:
-            torch.Tensor: Predicted next state of shape (B, s_dim).
+            torch.Tensor: Predicted next state of shape (B, [T], s_dim).
         """
-        B, T, s_dim = state.shape
-        state = state.reshape(B * T, s_dim)
-        action = action.reshape(B * T, -1)
+        if len(state.shape) == 3:
+            B, T, s_dim = state.shape
+            state = state.reshape(B * T, s_dim)
+            action = action.reshape(B * T, -1)
 
-        x = torch.cat([state, action], dim=1)
-        x = self.fc(x)
+            x = torch.cat([state, action], dim=1)
+            x = self.fc(x)
 
-        x = x.reshape(B, T, s_dim)
-        return x
+            x = x.reshape(B, T, s_dim)
+            return x
+        else:
+            B, s_dim = state.shape
+            x = torch.cat([state, action], dim=1)
+            x = self.fc(x)
+            return x
