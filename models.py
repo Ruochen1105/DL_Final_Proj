@@ -8,7 +8,7 @@ class Encoder(nn.Module):
     def __init__(self, input_channels=2, latent_dim=256):
         super().__init__()
 
-        # Convolutional layers
+        # Define convolutional layers
         self.conv = nn.Sequential(
             nn.Conv2d(input_channels, 32, 3, stride=2, padding=1),  # 64x64 -> 32x32
             nn.ReLU(),
@@ -20,9 +20,12 @@ class Encoder(nn.Module):
             nn.ReLU()
         )
 
-        # Dummy input to calculate output size
-        dummy_input = torch.zeros(1, input_channels, 64, 64)
-        conv_output_size = self.conv(dummy_input).view(1, -1).shape[1]
+        # Calculate dynamic output size
+        with torch.no_grad():
+            dummy_input = torch.zeros(1, input_channels, 64, 64)
+            conv_output = self.conv(dummy_input)
+            conv_output_size = conv_output.view(1, -1).shape[1]
+            print(f"Computed CNN output size: {conv_output_size}")
 
         # Fully connected layer
         self.fc = nn.Linear(conv_output_size, latent_dim)
