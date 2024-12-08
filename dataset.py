@@ -9,11 +9,13 @@ class WallSample:
         self.actions = actions
         self.locations = locations
 
-class WallDataset(Dataset):
+# Define WallDataset class with resizing
+class WallDataset:
     def __init__(self, data_path, probing=False, device="cuda"):
         self.device = device
         self.states = np.load(f"{data_path}/states.npy", mmap_mode="r")
         self.actions = np.load(f"{data_path}/actions.npy")
+        self.resize = T.Resize((64, 64))
 
         if probing:
             self.locations = np.load(f"{data_path}/locations.npy")
@@ -24,9 +26,17 @@ class WallDataset(Dataset):
         return len(self.states)
 
     def __getitem__(self, idx):
-        states = torch.from_numpy(self.states[idx]).float().to(self.device)
-        actions = torch.from_numpy(self.actions[idx]).float().to(self.device)
-        locations = torch.from_numpy(self.locations[idx]).float().to(self.device) if self.locations is not None else torch.empty(0).to(self.device)
+        states = torch.from_numpy(np.copy(self.states[idx])).float().to(self.device)
+        actions = torch.from_numpy(np.copy(self.actions[idx])).float().to(self.device)
+
+        # Resize each frame to 64x64
+        states = self.resize(states)
+
+        locations = (
+            torch.from_numpy(np.copy(self.locations[idx])).float().to(self.device)
+            if self.locations is not None
+            else torch.empty(0).to(self.device)
+        )
         return WallSample(states=states, actions=actions, locations=locations)
 
 def wall_collate_fn(batch):
