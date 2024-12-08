@@ -35,7 +35,7 @@ class WallDataset:
         if self.locations is not None:
             locations = torch.from_numpy(self.locations[i]).float().to(self.device)
         else:
-            locations = torch.empty(0).to(self.device)
+            locations = None 
 
         return WallSample(states=states, locations=locations, actions=actions)
 
