@@ -97,10 +97,15 @@ class JEPAWorldModel(nn.Module):
         return torch.cat(outputs, dim=1)
 
     def compute_loss(self, states, actions):
+        # Extract initial observation for the encoder
+        initial_states = states[:, 0]  # Shape: [64, 2, 64, 64]
+
         predicted_states = self.forward(states, actions)
+
         with torch.no_grad():
-            target_states = self.target_encoder(states)
-        loss = vicreg_loss(predicted_states, target_states)
+            target_states = self.target_encoder(initial_states)
+
+        loss = vicreg_loss(predicted_states[:, 0], target_states)
         return loss
 
 # VICReg Loss for collapse prevention
