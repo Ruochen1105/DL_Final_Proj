@@ -1,68 +1,117 @@
-from typing import List
-import numpy as np
-from torch import nn
-from torch.nn import functional as F
+
 import torch
+from torch import nn
+import torch.nn.functional as F
 
-
-def build_mlp(layers_dims: List[int]):
-    layers = []
-    for i in range(len(layers_dims) - 2):
-        layers.append(nn.Linear(layers_dims[i], layers_dims[i + 1]))
-        layers.append(nn.BatchNorm1d(layers_dims[i + 1]))
-        layers.append(nn.ReLU(True))
-    layers.append(nn.Linear(layers_dims[-2], layers_dims[-1]))
-    return nn.Sequential(*layers)
-
-
-class MockModel(torch.nn.Module):
-    """
-    Does nothing. Just for testing.
-    """
-
-    def __init__(self, device="cuda", bs=64, n_steps=17, output_dim=256):
+# Encoder for visual observations
+class Encoder(nn.Module):
+    def __init__(self, input_channels=2, latent_dim=256):
         super().__init__()
-        self.device = device
-        self.bs = bs
-        self.n_steps = n_steps
-        self.repr_dim = 256
+        self.encoder = nn.Sequential(
+            nn.Conv2d(input_channels, 32, 3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(64 * 16 * 16, latent_dim)
+        )
+
+    def forward(self, x):
+        return self.encoder(x)
+
+# Embedding actions into the latent space
+class ActionEmbedder(nn.Module):
+    def __init__(self, action_dim=2, embed_dim=256):
+        super().__init__()
+        self.fc = nn.Linear(action_dim, embed_dim)
+
+    def forward(self, actions):
+        return self.fc(actions)
+
+# Predictor head for contrastive loss
+class PredictorHead(nn.Module):
+    def __init__(self, latent_dim):
+        super().__init__()
+        self.head = nn.Sequential(
+            nn.Linear(latent_dim, latent_dim),
+            nn.ReLU(),
+            nn.Linear(latent_dim, latent_dim)
+        )
+
+    def forward(self, x):
+        return self.head(x)
+
+# Full JEPA model with Transformer
+class JEPAWorldModel(nn.Module):
+    def __init__(self, latent_dim=256, action_dim=2, n_layers=4, n_heads=8):
+        super().__init__()
+        self.encoder = Encoder(latent_dim=latent_dim)
+        self.target_encoder = Encoder(latent_dim=latent_dim)
+        self.action_embedder = ActionEmbedder(action_dim, latent_dim)
+        self.predictor_head = PredictorHead(latent_dim)
+
+        self.transformer = nn.Transformer(
+            d_model=latent_dim,
+            nhead=n_heads,
+            num_encoder_layers=n_layers,
+            num_decoder_layers=n_layers,
+            dim_feedforward=512,
+            dropout=0.1,
+            batch_first=True
+        )
+
+        self.repr_dim = latent_dim
 
     def forward(self, states, actions):
-        """
-        Args:
-            During training:
-                states: [B, T, Ch, H, W]
-            During inference:
-                states: [B, 1, Ch, H, W]
-            actions: [B, T-1, 2]
+        B, T, C, H, W = states.shape
+        encoded_states = self.encoder(states[:, 0])
+        action_embeds = self.action_embedder(actions)
 
-        Output:
-            predictions: [B, T, D]
-        """
-        return torch.randn((self.bs, self.n_steps, self.repr_dim)).to(self.device)
+        memory = encoded_states.unsqueeze(1)
+        outputs = [memory]
 
+        for t in range(1, T):
+            action_input = action_embeds[:, t-1].unsqueeze(1)
+            pred_state = self.transformer(src=memory, tgt=action_input)[:, -1, :]
+            pred_state = self.predictor_head(pred_state)
 
-class Prober(torch.nn.Module):
-    def __init__(
-        self,
-        embedding: int,
-        arch: str,
-        output_shape: List[int],
-    ):
-        super().__init__()
-        self.output_dim = np.prod(output_shape)
-        self.output_shape = output_shape
-        self.arch = arch
+            memory = torch.cat([memory, pred_state.unsqueeze(1)], dim=1)
+            outputs.append(pred_state.unsqueeze(1))
 
-        arch_list = list(map(int, arch.split("-"))) if arch != "" else []
-        f = [embedding] + arch_list + [self.output_dim]
-        layers = []
-        for i in range(len(f) - 2):
-            layers.append(torch.nn.Linear(f[i], f[i + 1]))
-            layers.append(torch.nn.ReLU(True))
-        layers.append(torch.nn.Linear(f[-2], f[-1]))
-        self.prober = torch.nn.Sequential(*layers)
+        return torch.cat(outputs, dim=1)
 
-    def forward(self, e):
-        output = self.prober(e)
-        return output
+    def compute_loss(self, states, actions):
+        predicted_states = self.forward(states, actions)
+        with torch.no_grad():
+            target_states = self.target_encoder(states)
+        loss = vicreg_loss(predicted_states, target_states)
+        return loss
+
+# VICReg Loss for collapse prevention
+def vicreg_loss(pred, target, lambda_v=25.0, mu=25.0, nu=1.0):
+    mse_loss = F.mse_loss(pred, target)
+    pred_std = torch.sqrt(pred.var(dim=0) + 1e-4)
+    target_std = torch.sqrt(target.var(dim=0) + 1e-4)
+
+    variance_loss = (F.relu(1 - pred_std).mean() + F.relu(1 - target_std).mean())
+
+    pred_centered = pred - pred.mean(dim=0)
+    target_centered = target - target.mean(dim=0)
+
+    pred_cov = (pred_centered.T @ pred_centered) / (pred.shape[0] - 1)
+    target_cov = (target_centered.T @ target_centered) / (target.shape[0] - 1)
+
+    pred_cov_loss = (pred_cov - torch.eye(pred.shape[1]).cuda()).pow(2).sum()
+    target_cov_loss = (target_cov - torch.eye(target.shape[1]).cuda()).pow(2).sum()
+
+    cov_loss = pred_cov_loss + target_cov_loss
+
+    total_loss = lambda_v * mse_loss + mu * variance_loss + nu * cov_loss
+    return total_loss
+
+# Momentum Updater for the target encoder
+class MomentumUpdater:
+    @staticmethod
+    def update(target_net, online_net, beta=0.99):
+        for target_param, online_param in zip(target_net.parameters(), online_net.parameters()):
+            target_param.data = beta * target_param.data + (1 - beta) * online_param.data
