@@ -20,11 +20,15 @@ class Encoder(nn.Module):
             nn.ReLU()
         )
 
+        # Dummy input to calculate output size
+        dummy_input = torch.zeros(1, input_channels, 64, 64)
+        conv_output_size = self.conv(dummy_input).view(1, -1).shape[1]
+
         # Fully connected layer
-        self.fc = nn.Linear(256 * 4 * 4, latent_dim)
+        self.fc = nn.Linear(conv_output_size, latent_dim)
 
     def forward(self, x):
-        x = self.conv(x)         # B x 256 x 4 x 4
+        x = self.conv(x)         # B x C_out x H_out x W_out
         x = x.view(x.size(0), -1)  # Flatten
         return self.fc(x)        # B x latent_dim
 
