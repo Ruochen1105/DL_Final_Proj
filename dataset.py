@@ -2,6 +2,7 @@
 import torch
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
+import torchvision.transforms as T
 
 class WallSample:
     def __init__(self, states, actions, locations):
