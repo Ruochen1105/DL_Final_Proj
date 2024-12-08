@@ -7,17 +7,26 @@ import torch.nn.functional as F
 class Encoder(nn.Module):
     def __init__(self, input_channels=2, latent_dim=256):
         super().__init__()
-        self.encoder = nn.Sequential(
-            nn.Conv2d(input_channels, 32, 3, stride=2, padding=1),
+
+        # Convolutional layers
+        self.conv = nn.Sequential(
+            nn.Conv2d(input_channels, 32, 3, stride=2, padding=1),  # 64x64 -> 32x32
             nn.ReLU(),
-            nn.Conv2d(32, 64, 3, stride=2, padding=1),
+            nn.Conv2d(32, 64, 3, stride=2, padding=1),              # 32x32 -> 16x16
             nn.ReLU(),
-            nn.Flatten(),
-            nn.Linear(64 * 16 * 16, latent_dim)
+            nn.Conv2d(64, 128, 3, stride=2, padding=1),             # 16x16 -> 8x8
+            nn.ReLU(),
+            nn.Conv2d(128, 256, 3, stride=2, padding=1),            # 8x8 -> 4x4
+            nn.ReLU()
         )
 
+        # Fully connected layer
+        self.fc = nn.Linear(256 * 4 * 4, latent_dim)
+
     def forward(self, x):
-        return self.encoder(x)
+        x = self.conv(x)         # B x 256 x 4 x 4
+        x = x.view(x.size(0), -1)  # Flatten
+        return self.fc(x)        # B x latent_dim
 
 # Embedding actions into the latent space
 class ActionEmbedder(nn.Module):
