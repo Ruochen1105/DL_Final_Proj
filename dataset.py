@@ -29,7 +29,19 @@ class WallDataset(Dataset):
         locations = torch.from_numpy(self.locations[idx]).float().to(self.device) if self.locations is not None else torch.empty(0).to(self.device)
         return WallSample(states=states, actions=actions, locations=locations)
 
+def wall_collate_fn(batch):
+    states = torch.stack([sample.states for sample in batch])
+    actions = torch.stack([sample.actions for sample in batch])
+    locations = torch.stack([sample.locations for sample in batch])
+    return WallSample(states=states, actions=actions, locations=locations)
+
 def create_wall_dataloader(data_path, probing=False, device="cuda", batch_size=64, train=True):
     dataset = WallDataset(data_path=data_path, probing=probing, device=device)
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=train, drop_last=True, pin_memory=False)
+    loader = DataLoader(
+        dataset, 
+        batch_size=batch_size, 
+        shuffle=train, 
+        drop_last=True, 
+        collate_fn=wall_collate_fn
+    )
     return loader
