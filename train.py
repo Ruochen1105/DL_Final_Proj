@@ -24,6 +24,10 @@ def train_model(epochs=50, lr=0.0002, save_path="jepa_model.pth"):
             states = batch.states
             actions = batch.actions
 
+            # Print the input shape
+            print(f"Input shape of states: {states.shape}")
+            print(f"Input shape of actions: {actions.shape}")
+
             # Compute Loss
             loss = model.compute_loss(states, actions)
 
