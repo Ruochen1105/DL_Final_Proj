@@ -109,6 +109,8 @@ class JEPA(nn.Module):
                 predicted_states, dim=1)  # Shape: (B, T-1, s_dim)
         else:  # training
             predicted_states = self.predictor(states[:, :-1], actions)
+            predicted_states = torch.cat(
+                (states[:, 0], predicted_states), dim=0)
 
         return predicted_states
 
