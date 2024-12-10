@@ -10,7 +10,7 @@ from dataset import create_wall_dataloader
 from models import JEPA
 
 
-def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./checkpoint", patience=5):
+def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=5):
     """
     Train the JEPA model using an energy-based approach.
 
@@ -70,7 +70,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             patience_counter = 0
 
             # Save the model checkpoint
-            checkpoint_path = os.path.join(save_path, f"best_model.pth")
+            checkpoint_path = os.path.join(save_path, f"model_weights.pth")
             torch.save(model.state_dict(), checkpoint_path)
             print(f"Model improved. Saved checkpoint to {checkpoint_path}")
         else:
