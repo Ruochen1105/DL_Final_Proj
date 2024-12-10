@@ -105,6 +105,7 @@ class JEPA(nn.Module):
                 predicted_states.append(predicted_state)
             predicted_states = torch.stack(
                 predicted_states, dim=1)
+            print(predicted_states.shape)
         else:  # training
             predicted_states = self.predictor(states[:, :-1], actions)
             initial_state = states[:, 0].unsqueeze(1)
