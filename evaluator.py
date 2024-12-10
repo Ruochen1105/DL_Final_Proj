@@ -116,8 +116,6 @@ class ProbingEvaluator:
                 pred_encs = pred_encs.transpose(
                     0, 1)  # # BS, T, D --> T, BS, D
 
-                print(pred_encs.shape)
-
                 # Make sure pred_encs has shape (T, BS, D) at this point
                 ################################################################################
 
