@@ -108,6 +108,7 @@ class JEPA(nn.Module):
                 predicted_states, dim=1)
             print("here")
         else:  # training
+            print("here1")
             predicted_states = self.predictor(states[:, :-1], actions)
 
         return predicted_states
