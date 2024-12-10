@@ -243,4 +243,5 @@ class Predictor(nn.Module):
             B, s_dim = state.shape
             x = torch.cat([state, action], dim=1)
             x = self.fc(x)
+            x = x.reshape(B, 1, s_dim)
             return x
