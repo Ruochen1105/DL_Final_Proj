@@ -1,7 +1,6 @@
 import glob
 
 import torch
-from torch.nn import DataParallel
 
 from dataset import create_wall_dataloader
 from evaluator import ProbingEvaluator
@@ -48,7 +47,6 @@ def load_model():
     """Load or initialize the model."""
     # TODO: Replace MockModel with your trained model
     model = JEPA(s_dim=256, cnn_dim=64)
-    model = DataParallel(model)
     model.load_state_dict(torch.load(
         "checkpoint/best_model.pth", weights_only=True))
     model.eval()

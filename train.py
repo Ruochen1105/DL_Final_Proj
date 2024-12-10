@@ -3,7 +3,6 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.nn import DataParallel
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 
@@ -30,9 +29,6 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     """
     os.makedirs(save_path, exist_ok=True)
 
-    if torch.cuda.device_count() > 1:
-        print(f"Using {torch.cuda.device_count()} GPUs with DataParallel.")
-    model = DataParallel(model)
     model.to(device)
 
     loss_fn = nn.MSELoss()
