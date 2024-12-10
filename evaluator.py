@@ -144,6 +144,8 @@ class ProbingEvaluator:
                         device=pred_encs.device,
                     )
 
+                    print(sampled_pred_encs.shape)
+
                     sampled_target_locs = torch.empty(
                         bs, config.sample_timesteps, 2)
 
