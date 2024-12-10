@@ -117,6 +117,8 @@ class ProbingEvaluator:
                 pred_encs = pred_encs.transpose(
                     0, 1)  # # BS, T, D --> T, BS, D
 
+                print(pred_encs.shape)
+
                 # Make sure pred_encs has shape (T, BS, D) at this point
                 ################################################################################
 
@@ -143,8 +145,6 @@ class ProbingEvaluator:
                         dtype=pred_encs.dtype,
                         device=pred_encs.device,
                     )
-
-                    print(sampled_pred_encs.shape)
 
                     sampled_target_locs = torch.empty(
                         bs, config.sample_timesteps, 2)
