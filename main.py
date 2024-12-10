@@ -47,6 +47,7 @@ def load_model():
     """Load or initialize the model."""
     # TODO: Replace MockModel with your trained model
     model = JEPA(s_dim=256, cnn_dim=64)
+    model.to("cuda")
     model.load_state_dict(torch.load(
         "model_weights.pth", weights_only=True))
     model.eval()
