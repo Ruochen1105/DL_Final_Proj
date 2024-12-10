@@ -91,7 +91,7 @@ class JEPA(nn.Module):
             actions (torch.Tensor): Sequence of actions of shape (B, T-1, 2).
 
         Returns:
-            torch.Tensor: Predicted next states of shape (B, T-1, s_dim).
+            torch.Tensor: Predicted next states of shape (B, T, s_dim).
         """
         # Encode the states into representations
         states = self.encoder(states)  # shape: (B, T, s_dim)
@@ -100,16 +100,16 @@ class JEPA(nn.Module):
             # Use states and actions to predict the next states
             predicted_states = [states]
             for t in range(T - 1):
-                # Use state at time t and action at time t to predict state at t+1
                 predicted_state = self.predictor(
                     predicted_states[-1], actions[:, t])
                 predicted_states.append(predicted_state)
             predicted_states = torch.stack(
-                predicted_states, dim=1)  # Shape: (B, T, s_dim)
+                predicted_states, dim=1)
         else:  # training
             predicted_states = self.predictor(states[:, :-1], actions)
+            initial_state = states[:, 0].unsqueeze(1)
             predicted_states = torch.cat(
-                (states[:, 0], predicted_states), dim=0)
+                (initial_state, predicted_states), dim=0)
 
         return predicted_states
 

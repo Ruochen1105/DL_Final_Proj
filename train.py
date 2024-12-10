@@ -46,9 +46,9 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             states, actions = states.to(device), actions.to(device)
 
             predicted_next_states = model(
-                states, actions)  # Shape: (B, T-1, s_dim)
+                states, actions)  # Shape: (B, T, s_dim)
 
-            next_states_true = model.encoder(states[:, 1:])
+            next_states_true = model.encoder(states)
 
             loss = loss_fn(predicted_next_states, next_states_true)
 
