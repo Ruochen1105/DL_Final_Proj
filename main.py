@@ -47,8 +47,9 @@ def load_model():
     """Load or initialize the model."""
     # TODO: Replace MockModel with your trained model
     model = JEPA(s_dim=256, cnn_dim=64)
-    checkpoint = torch.load("checkpoint/best_model.pth")
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(torch.load(
+        "checkpoint/best_model.pth", weights_only=True))
+    model.eval()
     return model
 
 
