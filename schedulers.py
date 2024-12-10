@@ -1,5 +1,5 @@
-from enum import auto, Enum
 import math
+from enum import Enum, auto
 
 
 class LRSchedule(Enum):
