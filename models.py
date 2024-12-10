@@ -80,6 +80,7 @@ class JEPA(nn.Module):
         super().__init__()
         self.encoder = Encoder(s_dim, cnn_dim)
         self.predictor = Predictor(s_dim)
+        self.repr_dim = s_dim
 
     def forward(self, states, actions):
         """
