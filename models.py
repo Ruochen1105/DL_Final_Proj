@@ -98,10 +98,10 @@ class JEPA(nn.Module):
         T = actions.shape[1]
         if states.shape[1] == 1:  # inferencing
             # Use states and actions to predict the next states
-            predicted_states = [states]
+            predicted_states = [states[:, 0]]
             for t in range(T - 1):
                 predicted_state = self.predictor(
-                    predicted_states[-1], actions[:, t])
+                    predicted_states[-1].unsqueeze(1), actions[:, t].unsqueeze(1))
                 predicted_states.append(predicted_state)
             predicted_states = torch.stack(
                 predicted_states, dim=1)
