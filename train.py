@@ -2,12 +2,28 @@ import os
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 
 from dataset import create_wall_dataloader
 from models import JEPA
+
+
+def contrastive_loss(predicted, target, contrastive, margin=0.5):
+    """
+    Loss = Cosine Loss (Predicted vs Target) + Contrastive Penalty (Predicted vs Contrastive)
+    """
+    # Cosine similarity between predicted and target (should be high)
+    positive_loss = 1 - F.cosine_similarity(predicted, target, dim=-1).mean()
+
+    # Cosine similarity between predicted and contrastive (should be low)
+    negative_loss = F.cosine_similarity(predicted, contrastive, dim=-1).mean()
+
+    # Combined loss with margin
+    loss = positive_loss + torch.clamp(margin - negative_loss, min=0)
+    return loss
 
 
 def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=5):
@@ -31,7 +47,6 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
     model.to(device)
 
-    loss_fn = nn.MSELoss()
     best_loss = float("inf")
     patience_counter = 0
     losses = []
@@ -50,7 +65,15 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
             next_states_true = model.encoder(states)
 
-            loss = loss_fn(predicted_next_states, next_states_true)
+            contrastive_states = torch.randn_like(next_states_true).to(device)
+
+            predicted_next_states = F.normalize(
+                predicted_next_states, p=2, dim=-1)
+            next_states_true = F.normalize(next_states_true, p=2, dim=-1)
+            contrastive_states = F.normalize(contrastive_states, p=2, dim=-1)
+
+            loss = contrastive_loss(
+                predicted_next_states, next_states_true, contrastive_states)
 
             optimizer.zero_grad()
             loss.backward()
