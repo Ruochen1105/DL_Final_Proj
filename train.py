@@ -10,6 +10,42 @@ from dataset import create_wall_dataloader
 from models import JEPA
 
 
+def barlow_twins_loss(predicted, target, lambda_corr=5e-3):
+    """
+    Computes the Barlow Twins-inspired loss for decorrelation.
+
+    Args:
+        predicted: Predicted next states, shape (B, T, s_dim).
+        target: True next states, shape (B, T, s_dim).
+        lambda_corr: Weight for the cross-correlation loss term.
+
+    Returns:
+        Combined loss (MSE + Cross-Correlation loss).
+    """
+    # Mean Squared Error Loss
+    mse_loss = nn.MSELoss()(predicted, target)
+
+    # Normalize predicted and target embeddings
+    B, T, s_dim = predicted.size()
+    predicted = predicted.view(B * T, s_dim)
+    target = target.view(B * T, s_dim)
+
+    predicted_norm = (predicted - predicted.mean(0)) / predicted.std(0)
+    target_norm = (target - target.mean(0)) / target.std(0)
+
+    # Cross-Correlation Matrix
+    corr_matrix = torch.mm(predicted_norm.T, target_norm) / (B * T)
+
+    # Cross-Correlation Loss
+    on_diag = torch.sum((torch.diag(corr_matrix) - 1) ** 2)
+    off_diag = torch.sum(corr_matrix ** 2) - on_diag
+    cross_corr_loss = on_diag + lambda_corr * off_diag
+
+    # Combine MSE loss and Cross-Correlation loss
+    combined_loss = mse_loss + cross_corr_loss
+    return combined_loss
+
+
 def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=5):
     """
     Train the JEPA model using an energy-based approach.
@@ -31,7 +67,6 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
     model.to(device)
 
-    loss_fn = nn.MSELoss()
     best_loss = float("inf")
     patience_counter = 0
     losses = []
@@ -50,7 +85,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
             next_states_true = model.encoder(states)
 
-            loss = loss_fn(predicted_next_states, next_states_true)
+            loss = barlow_twins_loss(predicted_next_states, next_states_true)
 
             optimizer.zero_grad()
             loss.backward()
