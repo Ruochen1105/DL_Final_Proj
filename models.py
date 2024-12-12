@@ -194,15 +194,6 @@ class Encoder(nn.Module):
         self.fc = nn.Linear(fc_input_dim, s_dim)
 
     def forward(self, x):
-        """
-        Forward pass for the encoder.
-
-        Args:
-            x (torch.Tensor): Input tensor of shape (B, T, C, H, W).
-
-        Returns:
-            torch.Tensor: Output tensor of shape (B, T, s_dim).
-        """
         B, T, C, H, W = x.size()
 
         # Process each frame in the batch
@@ -230,68 +221,57 @@ class Encoder(nn.Module):
 
 class Predictor(nn.Module):
     """
-    Predictor module for JEPA (Joint Embedding Predictive Architecture).
+    Attention-based Predictor module for JEPA.
 
-    The Predictor takes a state and a corresponding action as input, and predicts
-    the next state. It combines the current state and action into a single feature
-    vector and processes it through a fully connected layer with a non-linear activation.
+    The Predictor takes a state and a corresponding action as input and predicts
+    the next state using an attention mechanism.
 
     Args:
         s_dim (int): Dimensionality of the state vector.
+        a_dim (int): Dimensionality of the action vector.
 
     Attributes:
-        fc (torch.nn.Sequential): Fully connected layer for predicting the next state.
+        query (torch.nn.Linear): Linear layer to generate query vectors from state.
+        key (torch.nn.Linear): Linear layer to generate key vectors from action.
+        value (torch.nn.Linear): Linear layer to generate value vectors from action.
+        output (torch.nn.Linear): Linear layer to project the attention output to the predicted state.
 
     Forward Pass:
         The input is expected to be a batch of states and actions, with shapes
-        (B, s_dim) and (B, 2), respectively. The output is the predicted next state
+        (B, s_dim) and (B, a_dim), respectively. The output is the predicted next state
         with shape (B, s_dim).
 
     Methods:
         forward(state, action):
-            Processes the input state and action to predict the next state.
-            Args:
-                state (torch.Tensor): Current state of shape (B, T, s_dim), where:
-                    - B: Batch size.
-                    - s_dim: Dimensionality of the state vector.
-                action (torch.Tensor): Current action vector of shape (B, T, 2), where:
-                    - B: Batch size.
-            Returns:
-                torch.Tensor: Predicted next state of shape (B, s_dim).
+            Processes the input state and action using attention to predict the next state.
     """
 
-    def __init__(self, s_dim):
+    def __init__(self, s_dim, a_dim=2):
         super().__init__()
 
-        self.fc = nn.Sequential(
-            nn.Linear(s_dim + 2, s_dim),
-            nn.BatchNorm1d(num_features=s_dim),
-            nn.ReLU()
-        )
+        # Attention mechanism layers
+        self.query = nn.Linear(s_dim, s_dim)
+        self.key = nn.Linear(a_dim, s_dim)
+        self.value = nn.Linear(a_dim, s_dim)
+
+        # Output projection
+        self.output = nn.Linear(s_dim, s_dim)
 
     def forward(self, state, action):
-        """
-        Forward pass for the predictor.
+        B, T, s_dim = state.shape
+        state = state.reshape(B * T, s_dim)
+        action = action.reshape(B * T, -1)
 
-        Args:
-            state (torch.Tensor): State representation of shape (B, [T], s_dim).
-            action (torch.Tensor): Action vector of shape (B, [T], 2).
+        Q = self.query(state)  # Shape: (B*T, s_dim)
+        K = self.key(action)  # Shape: (B*T, s_dim)
+        V = self.value(action)  # Shape: (B*T, s_dim)
 
-        Returns:
-            torch.Tensor: Predicted next state of shape (B, [T], s_dim).
-        """
-        if len(state.shape) == 3:
-            B, T, s_dim = state.shape
-            state = state.reshape(B * T, s_dim)
-            action = action.reshape(B * T, -1)
+        attention_scores = torch.softmax(Q @ K.T / (s_dim ** 0.5), dim=-1)  # Shape: (B*T, B*T)
 
-            x = torch.cat([state, action], dim=1)
-            x = self.fc(x)
+        attention_output = attention_scores @ V  # Shape: (B*T, s_dim)
 
-            x = x.reshape(B, T, s_dim)
-            return x
-        else:
-            B, s_dim = state.shape
-            x = torch.cat([state, action], dim=1)
-            x = self.fc(x)
-            return x
+        predicted_state = self.output(attention_output)  # Shape: (B*T, s_dim)
+
+        predicted_state = predicted_state.reshape(B, T, s_dim)
+
+        return predicted_state
