@@ -11,7 +11,7 @@ from dataset import create_wall_dataloader
 from models import JEPA
 
 
-def barlow_twins_loss(predicted, target, lambda_=5e-3):
+def barlow_twins_loss(predicted, target, lambda_=1e-2):
     """
     Computes the Barlow Twins loss.
 
@@ -40,7 +40,7 @@ def barlow_twins_loss(predicted, target, lambda_=5e-3):
     identity = torch.eye(repr_dim, device=predicted.device)
 
     # Compute the invariance term (diagonal elements)
-    invariance_loss = torch.sum((torch.diag(cross_correlation) - 1) ** 2)
+    invariance_loss = torch.sum(F.relu(1 - torch.diag(cross_correlation)) ** 2)
 
     # Compute the redundancy reduction term (off-diagonal elements)
     off_diagonal_mask = ~identity.bool()
