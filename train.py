@@ -11,36 +11,43 @@ from dataset import create_wall_dataloader
 from models import JEPA
 
 
-def barlow_twins_loss(predicted, target, lambda_corr=5e-3):
+def barlow_twins_loss(predicted, target, lambda_=5e-3):
     """
-    Computes the Barlow Twins-inspired loss for decorrelation.
+    Computes the Barlow Twins loss.
 
     Args:
-        predicted: Predicted next states, shape (B, T, s_dim).
-        target: True next states, shape (B, T, s_dim).
-        lambda_corr: Weight for the cross-correlation loss term.
+        predicted (torch.Tensor): Embeddings from the model.
+        target (torch.Tensor): Embeddings from the augmented view.
+        lambda_ (float): Hyperparameter for off-diagonal weight.
 
     Returns:
-        Cross-Correlation loss.
+        torch.Tensor: Scalar loss value.
     """
-    # Normalize predicted and target embeddings
-    B, T, s_dim = predicted.size()
-    predicted = predicted.view(B * T, s_dim)
-    target = target.view(B * T, s_dim)
+    # Normalize embeddings along the last dimension (representation dimension)
+    predicted = F.normalize(predicted, dim=-1)
+    target = F.normalize(target, dim=-1)
 
-    predicted_norm = F.normalize(predicted, dim=0)
-    target_norm = F.normalize(target, dim=0)
+    # Reshape tensors to combine batch and temporal dimensions
+    batch_size, temporal_dim, repr_dim = predicted.size()
+    predicted = predicted.view(batch_size * temporal_dim, repr_dim)
+    target = target.view(batch_size * temporal_dim, repr_dim)
 
-    # Cross-Correlation Matrix
-    corr_matrix = torch.mm(predicted_norm.T, target_norm) / (B * T)
+    # Compute the cross-correlation matrix
+    cross_correlation = torch.mm(predicted.T, target) / (batch_size * temporal_dim)
 
-    # Cross-Correlation Loss
-    on_diag = torch.diagonal(corr_matrix).add_(-1).pow_(2).sum()
-    off_diag = off_diag = corr_matrix.fill_diagonal_(0).pow_(2).sum()
-    cross_corr_loss = on_diag + lambda_corr * off_diag
+    # Create the identity matrix for comparison
+    identity = torch.eye(repr_dim, device=predicted.device)
 
-    return cross_corr_loss
+    # Compute the invariance term (diagonal elements)
+    invariance_loss = torch.sum((torch.diag(cross_correlation) - 1) ** 2)
 
+    # Compute the redundancy reduction term (off-diagonal elements)
+    off_diagonal_mask = ~identity.bool()
+    off_diagonal_loss = torch.sum(cross_correlation[off_diagonal_mask] ** 2)
+
+    loss = invariance_loss + lambda_ * off_diagonal_loss
+
+    return loss
 
 def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=5):
     """
