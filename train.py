@@ -35,8 +35,8 @@ def barlow_twins_loss(predicted, target, lambda_corr=5e-1):
     corr_matrix = torch.mm(predicted_norm.T, target_norm) / (B * T)
 
     # Cross-Correlation Loss
-    on_diag = torch.diagonal(cross_corr).add_(-1).pow_(2).sum()
-    off_diag = off_diag = cross_corr.fill_diagonal_(0).pow_(2).sum()
+    on_diag = torch.diagonal(corr_matrix).add_(-1).pow_(2).sum()
+    off_diag = off_diag = corr_matrix.fill_diagonal_(0).pow_(2).sum()
     cross_corr_loss = on_diag + lambda_corr * off_diag
 
     return cross_corr_loss
