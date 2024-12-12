@@ -11,7 +11,7 @@ from dataset import create_wall_dataloader
 from models import JEPA
 
 
-def barlow_twins_loss(predicted, target, lambda_corr=5e-1):
+def barlow_twins_loss(predicted, target, lambda_corr=5e-3):
     """
     Computes the Barlow Twins-inspired loss for decorrelation.
 
@@ -117,7 +117,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
 if __name__ == "__main__":
     s_dim = 256
-    cnn_dim = 32
+    cnn_dim = 64
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_path = "/scratch/DL24FA/train"
