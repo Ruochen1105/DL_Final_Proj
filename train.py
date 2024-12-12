@@ -117,7 +117,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
 if __name__ == "__main__":
     s_dim = 256
-    cnn_dim = 64
+    cnn_dim = 32
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_path = "/scratch/DL24FA/train"
