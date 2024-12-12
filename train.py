@@ -33,7 +33,8 @@ def barlow_twins_loss(predicted, target, lambda_=5e-3):
     target = target.view(batch_size * temporal_dim, repr_dim)
 
     # Compute the cross-correlation matrix
-    cross_correlation = torch.mm(predicted.T, target) / (batch_size * temporal_dim)
+    cross_correlation = torch.mm(
+        predicted.T, target) / (batch_size * temporal_dim)
 
     # Create the identity matrix for comparison
     identity = torch.eye(repr_dim, device=predicted.device)
@@ -48,6 +49,7 @@ def barlow_twins_loss(predicted, target, lambda_=5e-3):
     loss = invariance_loss + lambda_ * off_diagonal_loss
 
     return loss
+
 
 def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=5):
     """
@@ -103,7 +105,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
         scheduler.step(avg_epoch_loss)
 
-        if avg_epoch_loss < best_loss:
+        if avg_epoch_loss < best_loss - 1e-4:
             best_loss = avg_epoch_loss
             patience_counter = 0
 
@@ -123,8 +125,8 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
 
 if __name__ == "__main__":
-    s_dim = 256
-    cnn_dim = 64
+    s_dim = 128
+    cnn_dim = 16
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_path = "/scratch/DL24FA/train"
