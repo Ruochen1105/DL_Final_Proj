@@ -11,43 +11,20 @@ from dataset import create_wall_dataloader
 from models import JEPA
 
 
-def barlow_twins_loss(predicted, target, lambda_=1e-2):
-    """
-    Computes the Barlow Twins loss.
+def vicreg_loss(z1, z2, lambda1=1.0, lambda2=1.0):
 
-    Args:
-        predicted (torch.Tensor): Embeddings from the model.
-        target (torch.Tensor): Embeddings from the augmented view.
-        lambda_ (float): Hyperparameter for off-diagonal weight.
+    # Normalize embeddings
+    z1 = F.normalize(z1, dim=-1)
+    z2 = F.normalize(z2, dim=-1)
 
-    Returns:
-        torch.Tensor: Scalar loss value.
-    """
-    # Normalize embeddings along the last dimension (representation dimension)
-    predicted = F.normalize(predicted, dim=-1)
-    target = F.normalize(target, dim=-1)
+    # Invariance loss (MSE between normalized embeddings)
+    invariance_loss = F.mse_loss(z1, z2)
 
-    # Reshape tensors to combine batch and temporal dimensions
-    batch_size, temporal_dim, repr_dim = predicted.size()
-    predicted = predicted.view(batch_size * temporal_dim, repr_dim)
-    target = target.view(batch_size * temporal_dim, repr_dim)
+    # Variance loss (MSE between mean of embeddings and zero)
+    variance_loss = F.mse_loss(z1.mean(dim=0), torch.zeros_like(z1.mean(dim=0))) + \
+        F.mse_loss(z2.mean(dim=0), torch.zeros_like(z2.mean(dim=0)))
 
-    # Compute the cross-correlation matrix
-    cross_correlation = torch.mm(
-        predicted.T, target) / (batch_size * temporal_dim)
-
-    # Create the identity matrix for comparison
-    identity = torch.eye(repr_dim, device=predicted.device)
-
-    # Compute the invariance term (diagonal elements)
-    invariance_loss = torch.sum(F.relu(1 - torch.diag(cross_correlation)) ** 2)
-
-    # Compute the redundancy reduction term (off-diagonal elements)
-    off_diagonal_mask = ~identity.bool()
-    off_diagonal_loss = torch.sum(cross_correlation[off_diagonal_mask] ** 2)
-
-    loss = invariance_loss + lambda_ * off_diagonal_loss
-
+    loss = lambda1 * invariance_loss + lambda2 * variance_loss
     return loss
 
 
@@ -77,7 +54,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     losses = []
 
     model.train()
-    tau = 0.999
+    tau = 0.9
 
     for epoch in range(epochs):
         epoch_loss = 0.0
@@ -91,7 +68,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
             next_states_true = model.target_encoder(states)
 
-            loss = barlow_twins_loss(predicted_next_states, next_states_true)
+            loss = vicreg_loss(predicted_next_states, next_states_true)
 
             optimizer.zero_grad()
             loss.backward()
@@ -131,8 +108,8 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
 
 if __name__ == "__main__":
-    s_dim = 128
-    cnn_dim = 16
+    s_dim = 256
+    cnn_dim = 32
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_path = "/scratch/DL24FA/train"
