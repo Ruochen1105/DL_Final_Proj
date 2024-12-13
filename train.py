@@ -77,6 +77,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     losses = []
 
     model.train()
+    tau = 0.999
 
     for epoch in range(epochs):
         epoch_loss = 0.0
@@ -88,13 +89,18 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             predicted_next_states = model(
                 states, actions)  # Shape: (B, T, s_dim)
 
-            next_states_true = model.encoder(states)
+            next_states_true = model.target_encoder(states)
 
             loss = barlow_twins_loss(predicted_next_states, next_states_true)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            with torch.no_grad():
+                for target_param, online_param in zip(model.target_encoder.parameters(), model.encoder.parameters()):
+                    target_param.data = tau * target_param.data + \
+                        (1 - tau) * online_param.data
 
             epoch_loss += loss.item()
 
