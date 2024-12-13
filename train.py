@@ -11,24 +11,36 @@ from dataset import create_wall_dataloader
 from models import JEPA
 
 
-def vicreg_loss(z1, z2, lambda1=1.0, lambda2=1.0):
-
-    # Normalize embeddings
-    z1 = F.normalize(z1, dim=-1)
-    z2 = F.normalize(z2, dim=-1)
-
-    # Invariance loss (MSE between normalized embeddings)
+def vicreg_loss(z1, z2, lambda1=10, lambda2=25.0, lambda3=1.0, eps=1e-4):
     invariance_loss = F.mse_loss(z1, z2)
 
-    # Variance loss (MSE between mean of embeddings and zero)
-    variance_loss = F.mse_loss(z1.mean(dim=0), torch.zeros_like(z1.mean(dim=0))) + \
-        F.mse_loss(z2.mean(dim=0), torch.zeros_like(z2.mean(dim=0)))
+    z1_flat = z1.view(-1, z1.shape[-1])  # Shape: (B * T, s_dim)
+    z2_flat = z2.view(-1, z2.shape[-1])  # Shape: (B * T, s_dim)
 
-    loss = lambda1 * invariance_loss + lambda2 * variance_loss
+    def variance_regularizer(z):
+        std = torch.sqrt(z.var(dim=0) + eps)
+        return torch.mean(F.relu(1 - std))   # Penalize std < 1
+
+    variance_loss = variance_regularizer(
+        z1_flat) + variance_regularizer(z2_flat)
+
+    def covariance_regularizer(z):
+        batch_size, embedding_dim = z.shape
+        z_centered = z - z.mean(dim=0, keepdim=True)
+        covariance_matrix = (z_centered.T @ z_centered) / (batch_size - 1)
+        off_diagonal = covariance_matrix - \
+            torch.diag(torch.diag(covariance_matrix))
+        return (off_diagonal ** 2).sum() / embedding_dim
+
+    covariance_loss = covariance_regularizer(
+        z1_flat) + covariance_regularizer(z2_flat)
+
+    loss = lambda1 * invariance_loss + lambda2 * \
+        variance_loss + lambda3 * covariance_loss
     return loss
 
 
-def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=5):
+def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=50):
     """
     Train the JEPA model using an energy-based approach.
 
@@ -86,9 +98,9 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
         print(f"Epoch {epoch + 1}/{epochs}, Loss: {avg_epoch_loss:.4f}")
 
-        scheduler.step(avg_epoch_loss)
+        # scheduler.step(avg_epoch_loss)
 
-        if avg_epoch_loss < best_loss - 1e-4:
+        if avg_epoch_loss < best_loss:
             best_loss = avg_epoch_loss
             patience_counter = 0
 
@@ -128,5 +140,5 @@ if __name__ == "__main__":
         optimizer, mode="min", factor=0.5, patience=3, verbose=True)
 
     # Train the model
-    epochs = 100
+    epochs = 200
     train_model(model, train_loader, optimizer, scheduler, epochs, device)
