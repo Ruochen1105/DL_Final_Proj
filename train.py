@@ -17,13 +17,7 @@ def contrastive_loss(embeddings_1, embeddings_2, temperature=0.5):
     batch_size = embeddings_1.shape[0]
 
     # Compute similarity matrix
-    similarity_matrix = torch.cat(
-        [
-            cosine_sim(embeddings_1.unsqueeze(1), embeddings_2.unsqueeze(0)),
-            cosine_sim(embeddings_2.unsqueeze(1), embeddings_1.unsqueeze(0))
-        ],
-        dim=0
-    )
+    similarity_matrix = cosine_sim(embeddings_1.unsqueeze(1), embeddings_2.unsqueeze(0))
 
     # Mask to remove self-similarity
     positive_mask = torch.eye(batch_size, dtype=torch.bool, device=embeddings_1.device)
@@ -81,7 +75,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             encoded_states = model.encoder(states)
 
             # Compute contrastive loss using encoded states
-            cont_loss = contrastive_loss(encoded_states)
+            cont_loss = contrastive_loss(encoded_states, encoded_states)
 
             # Add contrastive loss to the original loss
             loss += cont_loss * 0.5  # Weight the contrastive term
