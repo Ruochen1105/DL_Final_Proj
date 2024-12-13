@@ -95,6 +95,7 @@ class JEPA(nn.Module):
         """
         # Encode the states into representations
         states = self.encoder(states)  # shape: (B, T, s_dim)
+
         if states.shape[1] == 1:  # inferencing
             # Use states and actions to predict the next states
             predicted_states = [states]
@@ -105,7 +106,9 @@ class JEPA(nn.Module):
             predicted_states = torch.cat(
                 predicted_states, dim=1)
         else:  # training
-            predicted_states = self.predictor(states[:, :-1], actions)
+            # Apply stop-gradient to prevent collapse
+            target_states = states[:, :-1].detach()
+            predicted_states = self.predictor(target_states, actions)
             initial_state = states[:, 0].unsqueeze(1)
             predicted_states = torch.cat(
                 (initial_state, predicted_states), dim=1)
