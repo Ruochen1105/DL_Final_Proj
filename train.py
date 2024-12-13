@@ -9,6 +9,8 @@ from tqdm import tqdm
 from dataset import create_wall_dataloader
 from models import JEPA
 
+from torchvision import transforms
+from torch.nn.functional import mse_loss
 
 def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=5):
     """
@@ -27,6 +29,15 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     Returns:
         list: List of average training losses for each epoch.
     """
+    # Define augmentation pipeline for SimCLR-like views
+    augmentation = transforms.Compose([
+        transforms.RandomResizedCrop(64, scale=(0.8, 1.0)),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(0.4, 0.4, 0.4, 0.1),
+        transforms.RandomApply([transforms.GaussianBlur(3)], p=0.2),
+        transforms.Normalize(mean=[0.5], std=[0.5]),
+    ])
+
     os.makedirs(save_path, exist_ok=True)
 
     model.to(device)
@@ -51,6 +62,24 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             next_states_true = model.encoder(states)
 
             loss = loss_fn(predicted_next_states, next_states_true)
+
+            # Generate two augmented views
+            view_1 = augmentation(states)
+            view_2 = augmentation(states)
+
+            # Encode both views
+            encoded_view_1 = model.encoder(view_1)
+            encoded_view_2 = model.encoder(view_2)
+
+            # Predict future states
+            pred_view_1 = model.predictor(encoded_view_1[:, :-1].detach(), actions)
+            pred_view_2 = model.predictor(encoded_view_2[:, :-1].detach(), actions)
+
+            # Compute contrastive loss between views
+            contrastive_loss = mse_loss(pred_view_1, pred_view_2)
+
+            # Add the contrastive loss to the original loss
+            loss += contrastive_loss * 0.5  # Weight the loss term
 
             optimizer.zero_grad()
             loss.backward()
