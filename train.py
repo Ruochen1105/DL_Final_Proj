@@ -66,7 +66,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     losses = []
 
     model.train()
-    tau = 0.9
+    tau = 0.99
 
     for epoch in range(epochs):
         epoch_loss = 0.0
