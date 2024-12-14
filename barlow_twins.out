@@ -1,0 +1,114 @@
+Switched to branch 'main'
+Your branch is up to date with 'origin/main'.
+Already up to date.
+Switched to branch 'barlow_twins_loss'
+Your branch is up to date with 'origin/barlow_twins_loss'.
+Already up to date.
+Sat Dec 14 11:13:00 AM EST 2024
+/home/rm5327/.local/lib/python3.9/site-packages/torch/optim/lr_scheduler.py:62: UserWarning: The verbose parameter is deprecated. Please use get_last_lr() to access the learning rate.
+  warnings.warn(
+  0%|          | 0/2297 [00:00<?, ?it/s]/home/rm5327/DL_Final_Proj/dataset.py:33: UserWarning: The given NumPy array is not writable, and PyTorch does not support non-writable tensors. This means writing to this tensor will result in undefined behavior. You may want to copy the array to protect its data or make it writable before converting it to a tensor. This type of warning will be suppressed for the rest of this program. (Triggered internally at ../torch/csrc/utils/tensor_numpy.cpp:206.)
+  states = torch.from_numpy(self.states[i]).float().to(self.device)
+100%|██████████| 2297/2297 [17:22<00:00,  2.20it/s]
+Epoch 1/200, Loss: 23733.4030
+Model improved. Saved checkpoint to ./model_weights.pth
+100%|██████████| 2297/2297 [02:12<00:00, 17.30it/s]
+Epoch 2/200, Loss: 17217.3700
+Model improved. Saved checkpoint to ./model_weights.pth
+100%|██████████| 2297/2297 [02:12<00:00, 17.32it/s]
+Epoch 3/200, Loss: 901.1282
+Model improved. Saved checkpoint to ./model_weights.pth
+100%|██████████| 2297/2297 [02:12<00:00, 17.32it/s]
+Epoch 4/200, Loss: 693.4587
+Model improved. Saved checkpoint to ./model_weights.pth
+100%|██████████| 2297/2297 [02:12<00:00, 17.33it/s]
+Epoch 5/200, Loss: 560.7267
+Model improved. Saved checkpoint to ./model_weights.pth
+100%|██████████| 2297/2297 [02:12<00:00, 17.33it/s]
+Epoch 6/200, Loss: 439.5873
+Model improved. Saved checkpoint to ./model_weights.pth
+100%|██████████| 2297/2297 [02:12<00:00, 17.34it/s]
+Epoch 7/200, Loss: 601.4387
+100%|██████████| 2297/2297 [02:12<00:00, 17.34it/s]
+Epoch 8/200, Loss: 807.7589
+100%|██████████| 2297/2297 [02:12<00:00, 17.34it/s]
+Epoch 9/200, Loss: 653.5978
+100%|██████████| 2297/2297 [02:12<00:00, 17.34it/s]
+Epoch 10/200, Loss: 572.3106
+100%|██████████| 2297/2297 [02:12<00:00, 17.32it/s]
+Epoch 11/200, Loss: 402.9983
+Model improved. Saved checkpoint to ./model_weights.pth
+100%|██████████| 2297/2297 [02:12<00:00, 17.33it/s]
+Epoch 12/200, Loss: 379.6717
+Model improved. Saved checkpoint to ./model_weights.pth
+100%|██████████| 2297/2297 [02:12<00:00, 17.32it/s]
+Epoch 13/200, Loss: 870.8226
+100%|██████████| 2297/2297 [02:12<00:00, 17.33it/s]
+Epoch 14/200, Loss: 761.8564
+100%|██████████| 2297/2297 [02:12<00:00, 17.33it/s]
+Epoch 15/200, Loss: 568.7181
+100%|██████████| 2297/2297 [02:12<00:00, 17.34it/s]
+Epoch 16/200, Loss: 635.5784
+100%|██████████| 2297/2297 [02:12<00:00, 17.34it/s]
+Epoch 17/200, Loss: 485.4328
+Early stopping triggered.
+/home/rm5327/DL_Final_Proj/dataset.py:33: UserWarning: The given NumPy array is not writable, and PyTorch does not support non-writable tensors. This means writing to this tensor will result in undefined behavior. You may want to copy the array to protect its data or make it writable before converting it to a tensor. This type of warning will be suppressed for the rest of this program. (Triggered internally at ../torch/csrc/utils/tensor_numpy.cpp:206.)
+  states = torch.from_numpy(self.states[i]).float().to(self.device)
+Using device: cuda
+Probe prediction step: 100%|██████████| 156/156 [01:01<00:00,  2.53it/s]
+Probe prediction epochs:   5%|▌         | 1/20 [01:01<19:33, 61.77s/it]normalized pred locations loss 1407.314453125
+normalized pred locations loss 191.8227996826172
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 34.30it/s]
+Probe prediction epochs:  10%|█         | 2/20 [01:06<08:26, 28.11s/it]normalized pred locations loss 1.8723993301391602
+normalized pred locations loss 1.241477131843567
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 34.46it/s]
+Probe prediction epochs:  15%|█▌        | 3/20 [01:10<04:54, 17.34s/it]normalized pred locations loss 1.180558204650879
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 34.61it/s]
+Probe prediction epochs:  20%|██        | 4/20 [01:15<03:16, 12.28s/it]normalized pred locations loss 1.0949193239212036
+normalized pred locations loss 1.0634765625
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 34.55it/s]
+Probe prediction epochs:  25%|██▌       | 5/20 [01:19<02:22,  9.48s/it]normalized pred locations loss 0.9901596307754517
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 34.95it/s]
+Probe prediction epochs:  30%|███       | 6/20 [01:24<01:48,  7.77s/it]normalized pred locations loss 0.9890527129173279
+normalized pred locations loss 1.0939559936523438
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 34.91it/s]
+Probe prediction epochs:  35%|███▌      | 7/20 [01:28<01:27,  6.69s/it]normalized pred locations loss 0.9971716403961182
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.06it/s]
+Probe prediction epochs:  40%|████      | 8/20 [01:33<01:11,  5.98s/it]normalized pred locations loss 0.9199824929237366
+normalized pred locations loss 1.0994253158569336
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 34.85it/s]
+Probe prediction epochs:  45%|████▌     | 9/20 [01:37<01:00,  5.51s/it]normalized pred locations loss 0.9930278658866882
+normalized pred locations loss 1.0437045097351074
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.05it/s]
+Probe prediction epochs:  50%|█████     | 10/20 [01:42<00:51,  5.18s/it]normalized pred locations loss 0.8857369422912598
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.28it/s]
+Probe prediction epochs:  55%|█████▌    | 11/20 [01:46<00:44,  4.95s/it]normalized pred locations loss 0.8341178297996521
+normalized pred locations loss 1.034614086151123
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.30it/s]
+Probe prediction epochs:  60%|██████    | 12/20 [01:51<00:38,  4.79s/it]normalized pred locations loss 0.9020394682884216
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.34it/s]
+Probe prediction epochs:  65%|██████▌   | 13/20 [01:55<00:32,  4.68s/it]normalized pred locations loss 0.9261170029640198
+normalized pred locations loss 0.966040313243866
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.28it/s]
+Probe prediction epochs:  70%|███████   | 14/20 [01:59<00:27,  4.60s/it]normalized pred locations loss 0.8866143226623535
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.59it/s]
+Probe prediction epochs:  75%|███████▌  | 15/20 [02:04<00:22,  4.53s/it]normalized pred locations loss 0.980135977268219
+normalized pred locations loss 0.8920652866363525
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.70it/s]
+Probe prediction epochs:  80%|████████  | 16/20 [02:08<00:17,  4.48s/it]normalized pred locations loss 1.1461124420166016
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.52it/s]
+Probe prediction epochs:  85%|████████▌ | 17/20 [02:13<00:13,  4.46s/it]normalized pred locations loss 0.9591259956359863
+normalized pred locations loss 0.8545825481414795
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.51it/s]
+Probe prediction epochs:  90%|█████████ | 18/20 [02:17<00:08,  4.44s/it]normalized pred locations loss 0.9451749324798584
+normalized pred locations loss 0.8537775874137878
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.70it/s]
+Probe prediction epochs:  95%|█████████▌| 19/20 [02:21<00:04,  4.42s/it]normalized pred locations loss 0.9833297729492188
+Probe prediction step: 100%|██████████| 156/156 [00:04<00:00, 35.63it/s]
+Probe prediction epochs: 100%|██████████| 20/20 [02:26<00:00,  7.31s/it]
+normalized pred locations loss 1.0638242959976196
+normalized pred locations loss 1.000220537185669
+Eval probe pred: 100%|██████████| 62/62 [00:20<00:00,  3.07it/s]
+Eval probe pred: 100%|██████████| 62/62 [00:19<00:00,  3.16it/s]
+normal loss: 1113.20361328125
+wall loss: 1033.396728515625
