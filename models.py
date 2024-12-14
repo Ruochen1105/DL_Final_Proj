@@ -80,10 +80,6 @@ class JEPA(nn.Module):
         """
         super().__init__()
         self.encoder = Encoder(s_dim, cnn_dim)
-        self.target_encoder = Encoder(s_dim, cnn_dim)
-        self.target_encoder.load_state_dict(self.encoder.state_dict())
-        for param in self.target_encoder.parameters():
-            param.requires_grad = False
         self.predictor = Predictor(s_dim)
         self.repr_dim = s_dim
 

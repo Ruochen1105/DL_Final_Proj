@@ -11,36 +11,30 @@ from dataset import create_wall_dataloader
 from models import JEPA
 
 
-def vicreg_loss(z1, z2, lambda1=10, lambda2=25.0, lambda3=1.0, eps=1e-4):
-    invariance_loss = F.mse_loss(z1, z2)
+def barlow_twins_loss(z_a, z_b, lambda_=1):
+    """
+    Based on arxiv.org/abs/2103.03230
+    """
+    # Normalize representations along the batch dimension
+    z_a_norm = (z_a - z_a.mean(dim=0)) / z_a.std(dim=0)
+    z_b_norm = (z_b - z_b.mean(dim=0)) / z_b.std(dim=0)
 
-    z1_flat = z1.view(-1, z1.shape[-1])  # Shape: (B * T, s_dim)
-    z2_flat = z2.view(-1, z2.shape[-1])  # Shape: (B * T, s_dim)
+    # Compute cross-correlation matrix
+    c = torch.mm(z_a_norm.T, z_b_norm) / z_a.size(0)
 
-    def variance_regularizer(z):
-        std = torch.sqrt(z.var(dim=0) + eps)
-        return torch.mean(F.relu(1 - std))   # Penalize std < 1
+    # Compute loss
+    c_diff = (c - torch.eye(z_a.size(1))).pow(2)
 
-    variance_loss = variance_regularizer(
-        z1_flat) + variance_regularizer(z2_flat)
+    # Multiply off-diagonal elements of c_diff by lambda
+    c_diff[~torch.eye(z_a.size(1), dtype=bool)] *= lambda_
 
-    def covariance_regularizer(z):
-        batch_size, embedding_dim = z.shape
-        z_centered = z - z.mean(dim=0, keepdim=True)
-        covariance_matrix = (z_centered.T @ z_centered) / (batch_size - 1)
-        off_diagonal = covariance_matrix - \
-            torch.diag(torch.diag(covariance_matrix))
-        return (off_diagonal ** 2).sum() / embedding_dim
+    # Sum all elements of c_diff
+    loss = c_diff.sum()
 
-    covariance_loss = covariance_regularizer(
-        z1_flat) + covariance_regularizer(z2_flat)
-
-    loss = lambda1 * invariance_loss + lambda2 * \
-        variance_loss + lambda3 * covariance_loss
     return loss
 
 
-def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=50):
+def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=10):
     """
     Train the JEPA model using an energy-based approach.
 
@@ -66,7 +60,6 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     losses = []
 
     model.train()
-    tau = 0.99
 
     for epoch in range(epochs):
         epoch_loss = 0.0
@@ -78,18 +71,14 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             predicted_next_states = model(
                 states, actions)  # Shape: (B, T, s_dim)
 
-            next_states_true = model.target_encoder(states)
+            next_states_true = model.encoder(states)
 
-            loss = vicreg_loss(predicted_next_states, next_states_true)
+            loss = barlow_twins_loss(
+                predicted_next_states, next_states_true)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-
-            with torch.no_grad():
-                for target_param, online_param in zip(model.target_encoder.parameters(), model.encoder.parameters()):
-                    target_param.data = tau * target_param.data + \
-                        (1 - tau) * online_param.data
 
             epoch_loss += loss.item()
 
@@ -121,7 +110,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
 if __name__ == "__main__":
     s_dim = 256
-    cnn_dim = 32
+    cnn_dim = 64
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     data_path = "/scratch/DL24FA/train"
@@ -140,5 +129,5 @@ if __name__ == "__main__":
         optimizer, mode="min", factor=0.5, patience=3, verbose=True)
 
     # Train the model
-    epochs = 500
+    epochs = 200
     train_model(model, train_loader, optimizer, scheduler, epochs, device)
