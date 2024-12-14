@@ -245,6 +245,8 @@ class Predictor(nn.Module):
 
         predicted_state = self.output(attention_output)  # Shape: (B*T, s_dim)
 
+        predicted_state = nn.ReLU(predicted_state)
+
         predicted_state = predicted_state.reshape(B, T, s_dim)
 
         return predicted_state
