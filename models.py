@@ -141,17 +141,6 @@ class Encoder(nn.Module):
         H, W = (H - 1) // 2 + 1, (W - 1) // 2 + 1
         fc_input_dim = H * W * cnn_dim * 2
 
-        self.cnn = nn.Sequential(
-            nn.Conv2d(in_channels=C, out_channels=cnn_dim,
-                      kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(num_features=cnn_dim),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=cnn_dim, out_channels=cnn_dim *
-                      2, kernel_size=5, stride=2, padding=2),
-            nn.BatchNorm2d(num_features=cnn_dim * 2),
-            nn.ReLU()
-        )
-
         self.conv1 = nn.Sequential(
             nn.Conv2d(in_channels=C, out_channels=cnn_dim,
                       kernel_size=3, stride=2, padding=1),
@@ -168,7 +157,7 @@ class Encoder(nn.Module):
         self.channel_attention = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(cnn_dim,
-                      cnn_dim // 4, kernel_size=1),
+                      cnn_dim // 4, kernel_size=3, padding=1),
             nn.ReLU(),
             nn.Conv2d(cnn_dim // 4,
                       cnn_dim, kernel_size=1),
@@ -199,7 +188,6 @@ class Encoder(nn.Module):
         # Process each frame in the batch
         x = x.reshape(B * T, C, H, W)
 
-        # x = self.cnn(x)
         identity1 = self.residual1(x)
         x = self.conv1(x)
         channel_weights = self.channel_attention(x)
