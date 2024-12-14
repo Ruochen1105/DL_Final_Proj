@@ -226,8 +226,9 @@ class Predictor(nn.Module):
         self.key = nn.Linear(a_dim, s_dim)
         self.value = nn.Linear(a_dim, s_dim)
 
-        # Output projection
         self.output = nn.Linear(s_dim, s_dim)
+
+        self.ac = nn.ReLU()
 
     def forward(self, state, action):
         B, T, s_dim = state.shape
@@ -245,7 +246,7 @@ class Predictor(nn.Module):
 
         predicted_state = self.output(attention_output)  # Shape: (B*T, s_dim)
 
-        predicted_state = nn.ReLU(predicted_state)
+        predicted_state = self.ac(predicted_state)
 
         predicted_state = predicted_state.reshape(B, T, s_dim)
 
