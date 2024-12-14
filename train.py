@@ -20,8 +20,8 @@ def barlow_twins_loss(z_a, z_b, lambda_=1):
     z_b = z_b.view(B * T, -1)
 
     # Normalize representations along the batch dimension
-    z_a_norm = (z_a - z_a.mean(dim=-1)) / z_a.std(dim=-1)
-    z_b_norm = (z_b - z_b.mean(dim=-1)) / z_b.std(dim=-1)
+    z_a_norm = (z_a - z_a.mean(dim=0)) / z_a.std(dim=0, unbiased=False)
+    z_b_norm = (z_b - z_b.mean(dim=0)) / z_b.std(dim=0, unbiased=False)
 
     # Compute cross-correlation matrix
     c = torch.mm(z_a_norm.T, z_b_norm) / z_a.size(0)
