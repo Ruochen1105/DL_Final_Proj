@@ -148,12 +148,6 @@ class Encoder(nn.Module):
             nn.ReLU()
         )
 
-        self.residual1 = nn.Sequential(
-            nn.Conv2d(in_channels=C, out_channels=cnn_dim,
-                      kernel_size=1, stride=2),
-            nn.BatchNorm2d(cnn_dim)
-        )
-
         self.channel_attention = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(cnn_dim,
@@ -166,15 +160,9 @@ class Encoder(nn.Module):
 
         self.conv2 = nn.Sequential(
             nn.Conv2d(in_channels=cnn_dim, out_channels=cnn_dim * 2,
-                      kernel_size=5, stride=2, padding=2),
+                      kernel_size=3, stride=2, padding=1),
             nn.BatchNorm2d(cnn_dim * 2),
             nn.ReLU()
-        )
-
-        self.residual2 = nn.Sequential(
-            nn.Conv2d(in_channels=cnn_dim, out_channels=cnn_dim * 2,
-                      kernel_size=1, stride=2),
-            nn.BatchNorm2d(cnn_dim * 2)
         )
 
         self.dropout = nn.Dropout2d(p=0.2)
@@ -188,16 +176,12 @@ class Encoder(nn.Module):
         # Process each frame in the batch
         x = x.reshape(B * T, C, H, W)
 
-        identity1 = self.residual1(x)
         x = self.conv1(x)
         channel_weights = self.channel_attention(x)
         x = x * channel_weights
-        x = x + identity1
         x = F.relu(x)
-        identity2 = self.residual2(x)
         x = self.conv2(x)
         x = self.dropout(x)
-        x = x + identity2
         x = F.relu(x)
 
         x = self.flatten(x)
