@@ -27,7 +27,7 @@ def barlow_twins_loss(z_a, z_b, lambda_=1):
     c = torch.mm(z_a_norm.T, z_b_norm) / z_a.size(0)
 
     # Compute loss
-    c_diff = (c - torch.eye(z_a.size(1))).pow(2)
+    c_diff = (c.to("cuda") - torch.eye(z_a.size(1)).to("cuda")).pow(2)
 
     # Multiply off-diagonal elements of c_diff by lambda
     c_diff[~torch.eye(z_a.size(1), dtype=bool)] *= lambda_
