@@ -10,6 +10,29 @@ from dataset import create_wall_dataloader
 from models import JEPA
 
 
+def barlow_twins_loss(t1, t2, lambda_=5e-1):
+    t1 = t1.view(t1.shape[0] * t1.shape[1], -1)
+    t2 = t2.view(t2.shape[0] * t2.shape[1], -1)
+
+    t1 = nn.functional.normalize(t1, p=2, dim=1)
+    t2 = nn.functional.normalize(t2, p=2, dim=1)
+
+    cross_correlation_matrix = torch.matmul(t1.T, t2)
+
+    diag_values = torch.diag(cross_correlation_matrix)
+
+    mask = torch.ones_like(cross_correlation_matrix) - torch.eye(
+        cross_correlation_matrix.size(0), device=cross_correlation_matrix.device
+    )
+
+    off_diag_values = cross_correlation_matrix[mask.bool()]
+
+    loss = (1 - diag_values).pow(2).sum() + \
+        lambda_ * off_diag_values.pow(2).sum()
+
+    return loss
+
+
 def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=5):
     """
     Train the JEPA model using an energy-based approach.
@@ -31,7 +54,6 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
     model.to(device)
 
-    loss_fn = nn.MSELoss()
     best_loss = float("inf")
     patience_counter = 0
     losses = []
@@ -50,7 +72,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
             next_states_true = model.encoder(states)
 
-            loss = loss_fn(predicted_next_states, next_states_true)
+            loss = barlow_twins_loss(predicted_next_states, next_states_true)
 
             optimizer.zero_grad()
             loss.backward()
