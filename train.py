@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
     # Model, optimizer, and device
     model = JEPA(s_dim, cnn_dim).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=5e-2)
     scheduler = ReduceLROnPlateau(
         optimizer, mode="min", factor=0.5, patience=3, verbose=True)
 
