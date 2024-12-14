@@ -38,7 +38,7 @@ def barlow_twins_loss(z_a, z_b, lambda_=1):
     return loss
 
 
-def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=10):
+def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=10, checkpoint=None):
     """
     Train the JEPA model using an energy-based approach.
 
@@ -56,6 +56,10 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
         list: List of average training losses for each epoch.
     """
     os.makedirs(save_path, exist_ok=True)
+
+    if checkpoint:
+        model.load_state_dict(torch.load(
+            checkpoint, weights_only=False))
 
     model.to(device)
 
@@ -134,4 +138,5 @@ if __name__ == "__main__":
 
     # Train the model
     epochs = 200
-    train_model(model, train_loader, optimizer, scheduler, epochs, device)
+    train_model(model=model, train_loader=train_loader, optimizer=optimizer, scheduler=scheduler,
+                epochs=epochs, device=device, checkpoint="best_model.pth")
