@@ -2,6 +2,7 @@ from typing import List
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 
@@ -176,69 +177,34 @@ class Encoder(nn.Module):
 
 
 class Predictor(nn.Module):
-    """
-    Predictor module for JEPA (Joint Embedding Predictive Architecture).
-
-    The Predictor takes a state and a corresponding action as input, and predicts
-    the next state. It combines the current state and action into a single feature
-    vector and processes it through a fully connected layer with a non-linear activation.
-
-    Args:
-        s_dim (int): Dimensionality of the state vector.
-
-    Attributes:
-        fc (torch.nn.Sequential): Fully connected layer for predicting the next state.
-
-    Forward Pass:
-        The input is expected to be a batch of states and actions, with shapes
-        (B, s_dim) and (B, 2), respectively. The output is the predicted next state
-        with shape (B, s_dim).
-
-    Methods:
-        forward(state, action):
-            Processes the input state and action to predict the next state.
-            Args:
-                state (torch.Tensor): Current state of shape (B, T, s_dim), where:
-                    - B: Batch size.
-                    - s_dim: Dimensionality of the state vector.
-                action (torch.Tensor): Current action vector of shape (B, T, 2), where:
-                    - B: Batch size.
-            Returns:
-                torch.Tensor: Predicted next state of shape (B, s_dim).
-    """
-
     def __init__(self, s_dim):
         super().__init__()
 
-        self.fc = nn.Sequential(
-            nn.Linear(s_dim + 2, s_dim),
-            nn.BatchNorm1d(num_features=s_dim),
-            nn.ReLU()
-        )
+        self.s_dim = s_dim
+
+        self.query = nn.Linear(s_dim, 64)  # Query projection from state
+        self.key = nn.Linear(2, 64)    # Key projection from action
+        # Value projection from state-action pair
+        self.value = nn.Linear(s_dim + 2, s_dim)
+
+        self.scale = 64 ** 0.5
 
     def forward(self, state, action):
-        """
-        Forward pass for the predictor.
+        B, T, _ = state.shape
+        state = state.view(B * T, -1)
+        action = action.view(B * T, -1)
+        query = self.query(state)  # Shape: (B * T, attention_dim)
+        key = self.key(action)     # Shape: (B * T, attention_dim)
+        # Shape: (B * T, s_dim)
+        value = self.value(torch.cat([state, action], dim=1))
 
-        Args:
-            state (torch.Tensor): State representation of shape (B, [T], s_dim).
-            action (torch.Tensor): Action vector of shape (B, [T], 2).
+        scores = torch.matmul(query, key.T) / \
+            self.scale  # Shape: (B * T, B * T)
+        attention = F.softmax(scores, dim=1)  # Shape: (B * T, B * T)
 
-        Returns:
-            torch.Tensor: Predicted next state of shape (B, [T], s_dim).
-        """
-        if len(state.shape) == 3:
-            B, T, s_dim = state.shape
-            state = state.reshape(B * T, s_dim)
-            action = action.reshape(B * T, -1)
+        # Apply attention to values
+        output = torch.matmul(attention, value)  # Shape: (B * T, s_dim)
 
-            x = torch.cat([state, action], dim=1)
-            x = self.fc(x)
+        output = output.view(B, T, -1)
 
-            x = x.reshape(B, T, s_dim)
-            return x
-        else:
-            B, s_dim = state.shape
-            x = torch.cat([state, action], dim=1)
-            x = self.fc(x)
-            return x
+        return output
