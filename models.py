@@ -95,22 +95,7 @@ class JEPA(nn.Module):
         """
         # Encode the states into representations
         states = self.encoder(states)  # shape: (B, T, s_dim)
-        if states.shape[1] == 1:  # inferencing
-            # Use states and actions to predict the next states
-            predicted_states = [states]
-            for t in range(actions.shape[1]):
-                predicted_state = self.predictor(
-                    predicted_states[-1], actions[:, t])
-                predicted_states.append(predicted_state)
-            predicted_states = torch.cat(
-                predicted_states, dim=1)
-        else:  # training
-            predicted_states = self.predictor(states[:, :-1], actions)
-            initial_state = states[:, 0].unsqueeze(1)
-            predicted_states = torch.cat(
-                (initial_state, predicted_states), dim=1)
-
-        return predicted_states
+        return states
 
 
 class Encoder(nn.Module):
@@ -135,24 +120,8 @@ class Encoder(nn.Module):
         super().__init__()
         C, H, W = 2, 65, 65
 
-        # Calculate dimensions for the fully connected layer
-        H, W = (H - 1) // 2 + 1, (W - 1) // 2 + 1
-        H, W = (H - 1) // 2 + 1, (W - 1) // 2 + 1
-        fc_input_dim = H * W * cnn_dim * 2
-
-        self.cnn = nn.Sequential(
-            nn.Conv2d(in_channels=C, out_channels=cnn_dim,
-                      kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(num_features=cnn_dim),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=cnn_dim, out_channels=cnn_dim *
-                      2, kernel_size=5, stride=2, padding=2),
-            nn.BatchNorm2d(num_features=cnn_dim * 2),
-            nn.ReLU()
-        )
-
         self.flatten = nn.Flatten()
-        self.fc = nn.Linear(fc_input_dim, s_dim)
+        self.fc = nn.Linear(C * H * W, s_dim)
 
     def forward(self, x):
         """
@@ -168,7 +137,6 @@ class Encoder(nn.Module):
 
         # Process each frame in the batch
         x = x.reshape(B * T, C, H, W)
-        x = self.cnn(x)
         x = self.flatten(x)
         x = self.fc(x)
         x = x.reshape(B, T, -1)
