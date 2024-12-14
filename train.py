@@ -140,4 +140,4 @@ if __name__ == "__main__":
     # Train the model
     epochs = 200
     train_model(model=model, train_loader=train_loader, optimizer=optimizer, scheduler=scheduler,
-                epochs=epochs, device=device, checkpoint="best_model.pth")
+                epochs=epochs, device=device, checkpoint="model_weights.pth")
