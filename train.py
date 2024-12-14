@@ -58,6 +58,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     os.makedirs(save_path, exist_ok=True)
 
     if checkpoint:
+        print("Continue from checkpoint")
         model.load_state_dict(torch.load(
             checkpoint, weights_only=False))
 
