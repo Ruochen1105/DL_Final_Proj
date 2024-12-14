@@ -191,8 +191,8 @@ class Predictor(nn.Module):
 
     def forward(self, state, action):
         B, T, _ = state.shape
-        state = state.view(B * T, -1)
-        action = action.view(B * T, -1)
+        state = state.reshape(B * T, -1)
+        action = action.reshape(B * T, -1)
         query = self.query(state)  # Shape: (B * T, attention_dim)
         key = self.key(action)     # Shape: (B * T, attention_dim)
         # Shape: (B * T, s_dim)
@@ -205,6 +205,6 @@ class Predictor(nn.Module):
         # Apply attention to values
         output = torch.matmul(attention, value)  # Shape: (B * T, s_dim)
 
-        output = output.view(B, T, -1)
+        output = output.reshape(B, T, -1)
 
         return output
