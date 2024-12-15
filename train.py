@@ -34,6 +34,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
     loss_fn = nn.MSELoss()
     best_loss = float("inf")
     patience_counter = 0
+    relu = nn.ReLU()
     losses = []
 
     model.train()
@@ -66,7 +67,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             avg_correlation = correlations.mean()
 
             loss = loss_fn(predicted_next_states,
-                           next_states_true) + 5e-2 * avg_correlation
+                           next_states_true) + relu(avg_correlation)
 
             optimizer.zero_grad()
             loss.backward()
