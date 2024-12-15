@@ -65,7 +65,7 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             correlations = correlation_matrix[:,
                                               triu_indices[0], triu_indices[1]]
             correlations = relu(correlations)
-            sum_correlation = correlations.sum()
+            sum_correlation = correlations.mean()
 
             loss = loss_fn(predicted_next_states,
                            next_states_true) + sum_correlation
@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
     # Model, optimizer, and device
     model = JEPA(s_dim, cnn_dim).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=5e-2)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
     scheduler = ReduceLROnPlateau(
         optimizer, mode="min", factor=0.5, patience=3, verbose=True)
 
