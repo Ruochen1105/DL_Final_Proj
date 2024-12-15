@@ -50,7 +50,23 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
             next_states_true = model.encoder(states)
 
-            loss = loss_fn(predicted_next_states, next_states_true)
+            B, T, repr_dim = next_states_true.shape
+
+            tensor_centered = next_states_true - \
+                next_states_true.mean(dim=1, keepdim=True)
+            covariance = torch.einsum(
+                'bti,btj->bij', tensor_centered, tensor_centered) / (T - 1)
+            std_dev = tensor_centered.std(
+                dim=1, unbiased=True)  # Shape: (B, repr_dim)
+            correlation_matrix = covariance / \
+                (std_dev.unsqueeze(2) * std_dev.unsqueeze(1) + 1e-9)
+            triu_indices = torch.triu_indices(repr_dim, repr_dim, offset=1)
+            correlations = correlation_matrix[:,
+                                              triu_indices[0], triu_indices[1]]
+            avg_correlation = correlations.mean()
+
+            loss = loss_fn(predicted_next_states,
+                           next_states_true) + avg_correlation
 
             optimizer.zero_grad()
             loss.backward()
