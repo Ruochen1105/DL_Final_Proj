@@ -83,6 +83,10 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
 
         scheduler.step(avg_epoch_loss)
 
+        if avg_epoch_loss < 2e-4:
+            print("Prevent collapse.")
+            break
+
         if avg_epoch_loss < best_loss:
             best_loss = avg_epoch_loss
             patience_counter = 0
