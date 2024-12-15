@@ -64,10 +64,10 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             triu_indices = torch.triu_indices(repr_dim, repr_dim, offset=1)
             correlations = correlation_matrix[:,
                                               triu_indices[0], triu_indices[1]]
-            avg_correlation = correlations.mean()
+            sum_correlation = correlations.sum()
 
             loss = loss_fn(predicted_next_states,
-                           next_states_true) + relu(avg_correlation)
+                           next_states_true) + relu(sum_correlation)
 
             optimizer.zero_grad()
             loss.backward()
