@@ -93,8 +93,13 @@ class JEPA(nn.Module):
             torch.Tensor: Predicted next states of shape (B, T, s_dim).
         """
         # Encode the states into representations
-        states = self.encoder(states)  # shape: (B, T, s_dim)
-        return states
+        if states.shape[1] != 1:
+            states = self.encoder(states)  # shape: (B, T, s_dim)
+            return states
+        else:
+            states = torch.cat([states] * (actions.shape[1] + 1), dim=1)
+            states = self.encoder(states)
+            return states
 
 
 class Encoder(nn.Module):
