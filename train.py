@@ -105,5 +105,5 @@ if __name__ == "__main__":
         optimizer, mode="min", factor=0.5, patience=3, verbose=True)
 
     # Train the model
-    epochs = 200
+    epochs = 2
     train_model(model, train_loader, optimizer, scheduler, epochs, device)
