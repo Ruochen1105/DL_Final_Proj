@@ -9,6 +9,25 @@ from tqdm import tqdm
 from dataset import create_wall_dataloader
 from models import JEPA
 
+from torch.nn import CosineSimilarity
+import torch.nn.functional as F
+
+def contrastive_loss(embeddings_1, embeddings_2, temperature=0.5):
+    cosine_sim = CosineSimilarity(dim=-1)
+    batch_size = embeddings_1.shape[0]
+
+    # Compute similarity matrix
+    similarity_matrix = cosine_sim(embeddings_1.unsqueeze(1), embeddings_2.unsqueeze(0))
+
+    # Mask to remove self-similarity
+    positive_mask = torch.eye(batch_size, dtype=torch.bool, device=embeddings_1.device)
+    positive_sim = similarity_matrix[positive_mask].view(batch_size, 1)
+
+    # Compute NT-Xent Loss
+    logits = similarity_matrix / temperature
+    labels = torch.arange(batch_size, device=embeddings_1.device)
+    loss = F.cross_entropy(logits, labels)
+    return loss
 
 def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_path="./", patience=5):
     """
@@ -51,6 +70,15 @@ def train_model(model, train_loader, optimizer, scheduler, epochs, device, save_
             next_states_true = model.encoder(states)
 
             loss = loss_fn(predicted_next_states, next_states_true)
+
+            # Encode current batch of states
+            encoded_states = model.encoder(states)
+
+            # Compute contrastive loss using encoded states
+            cont_loss = contrastive_loss(encoded_states, encoded_states)
+
+            # Add contrastive loss to the original loss
+            loss += cont_loss * 0.5  # Weight the contrastive term
 
             optimizer.zero_grad()
             loss.backward()
