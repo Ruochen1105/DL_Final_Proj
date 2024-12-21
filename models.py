@@ -174,7 +174,28 @@ class Encoder(nn.Module):
 
         return x
 
+def vicreg_loss(predicted_states, target_states, lambda_var=1.0, lambda_cov=1.0, lambda_dist=1.0):
+    """
+    Enhanced VicReg loss function with stable covariance calculation.
+    """
+    def batch_covariance(x):
+        x = x - x.mean(dim=0)
+        return (x.T @ x) / (x.size(0) - 1)
 
+    # Variance Regularization
+    var_loss = torch.mean(F.relu(1 - torch.var(predicted_states, dim=0))) + \
+               torch.mean(F.relu(1 - torch.var(target_states, dim=0)))
+
+    # Covariance Regularization
+    pred_cov = batch_covariance(predicted_states)
+    target_cov = batch_covariance(target_states)
+    cov_loss = torch.sum(pred_cov ** 2) + torch.sum(target_cov ** 2)
+
+    # Distance Loss
+    dist_loss = F.mse_loss(predicted_states, target_states)
+
+    return lambda_dist * dist_loss + lambda_var * var_loss + lambda_cov * cov_loss
+    
 class Predictor(nn.Module):
     """
     Predictor module for JEPA (Joint Embedding Predictive Architecture).
